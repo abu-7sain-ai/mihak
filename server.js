@@ -38,7 +38,9 @@ const MODELS = {
   deepseek: ENV.DEEPSEEK_MODEL || '~deepseek/deepseek-pro-latest',
   member: ENV.MEMBER_MODEL || '~deepseek/deepseek-flash-latest',   // خبراء الاجتماع (رخيص)
   chair: ENV.CHAIR_MODEL || ENV.QWEN_MODEL || 'qwen/qwen3.8-max-prime', // رئيس الاجتماع
+  fable: ENV.FABLE_MODEL || 'fable (Claude Code)',   // كشّاف يشتغل على جهاز المالك، مو على السيرفر
 };
+const FABLE_WINDOW_MS = 5 * 60_000;                  // كم ينتظر السيرفر قرار Fable بعد بداية الجولة
 
 // ── قوانين المسابقة (نفسها للكل، وتنقفل عند البداية) ──────────────────────────
 const DEFAULT_RULES = {
@@ -117,6 +119,14 @@ const BOTS = [
     desc: 'نفس فرص DeepSeek ونفس أصوات الخبراء، والقرار بقاعدة ثابتة بالكود.' },
   { id: 'now-deepseek-always', name: 'DeepSeek · يدخل دائماً', kind: 'always', source: 'now-deepseek', team: 'now', family: 'deepseek', model: MODELS.deepseek,
     desc: 'نفس كشّاف DeepSeek، لكن يدخل أقوى فرصة سمّاها في كل جولة حتى لو DeepSeek قال انتظر.' },
+  { id: 'now-fable', name: 'Fable · لحاله', kind: 'ai', remote: true, model: MODELS.fable, team: 'now', family: 'fable',
+    desc: 'كشّاف Fable يشتغل على جهاز المالك عن طريق Claude Code، بنفس اللقطة ونفس الأخبار ونفس الطلب. إذا ما وصل قراره خلال 5 دقايق، الجولة تنحسب "فاتته".' },
+  { id: 'now-fable-chair', name: 'Fable · اجتماع (مدير موديل)', kind: 'meeting', chair: 'model', source: 'now-fable', team: 'now', family: 'fable', model: MODELS.chair,
+    desc: 'نفس فرص Fable. اجتماع خبراء (نفس موديلات العائلات الثانية)، ومدير موديل يقرر.' },
+  { id: 'now-fable-rule', name: 'Fable · اجتماع (مدير كود)', kind: 'meeting', chair: 'rule', source: 'now-fable', team: 'now', family: 'fable',
+    desc: 'نفس فرص Fable ونفس أصوات الخبراء، والقرار بقاعدة ثابتة بالكود.' },
+  { id: 'now-fable-always', name: 'Fable · يدخل دائماً', kind: 'always', source: 'now-fable', team: 'now', family: 'fable', model: MODELS.fable,
+    desc: 'نفس كشّاف Fable، لكن يدخل أقوى فرصة سمّاها في كل جولة حتى لو Fable قال انتظر.' },
   { id: 'past-strategy', name: 'الماضي · استراتيجية', kind: 'webhook', team: 'past',
     desc: 'استراتيجية مختبرة على سنين في TradingView، ترسل إشاراتها هنا.' },
   { id: 'random', name: 'العشوائي', kind: 'random', referee: true,
@@ -156,8 +166,14 @@ let state = {
   bots: Object.fromEntries(BOTS.map(b => [b.id, freshBot(DEFAULT_RULES)])),
   news: { text: null, at: null, searches: 0, error: null },
   opportunities: [],   // كل فرصة لقاها كشّاف + أصوات الاجتماع + نتيجتها الافتراضية
+  fable: freshFable(), // جولات كشّاف Fable: كم وحدة رد فيها وكم فاتته
   system: { bootAt: Date.now(), nextDecisionAt: null, universe: [] },
 };
+
+function freshFable() {
+  // presentRounds: الجولات اللي رد فيها Fable — المقارنة العادلة بين العائلات تكون عليها بس
+  return { rounds: 0, present: 0, missed: 0, skipped: 0, presentRounds: [], lastRound: null };
+}
 
 let universe = [];          // رموز العملات الحلال المتاحة على Binance (BTCUSDT...)
 let dirty = true;
@@ -181,6 +197,7 @@ function loadDb() {
         // ترقية: الهدف والوقف صاروا من التوصية. الأرقام الثابتة القديمة صارت احتياطي بس.
         ...(saved.rules && saved.rules.minStopPercent == null ? { takeProfitPercent: DEFAULT_RULES.takeProfitPercent, stopLossPercent: DEFAULT_RULES.stopLossPercent, maxTradeTimeMinutes: DEFAULT_RULES.maxTradeTimeMinutes } : {}) },
       bots: Object.fromEntries(BOTS.map(b => [b.id, { ...freshBot(DEFAULT_RULES), ...(saved.bots?.[b.id] || {}) }])),
+      fable: { ...freshFable(), ...(saved.fable || {}) },
       system: { ...state.system, ...saved.system, bootAt: Date.now() },
     };
     log.ok('الحالة انقرأت من db.json');
@@ -243,7 +260,7 @@ function blockReason(id) {
 }
 
 // ── فتح وإغلاق الصفقات ──────────────────────────────────────────────────────
-async function enterTrade(id, { symbol, confidence = null, reason = null, tpPercent, slPercent, maxMinutes }) {
+async function enterTrade(id, { symbol, confidence = null, reason = null, tpPercent, slPercent, maxMinutes, round = null }) {
   const bot = state.bots[id];
   const r = R();
   if (activeTrades(id).some(t => t.symbol === symbol)) return { error: `فيه صفقة مفتوحة على ${symbol}` };
@@ -283,6 +300,7 @@ async function enterTrade(id, { symbol, confidence = null, reason = null, tpPerc
     closeReason: null,
     confidence,
     signalReason: reason,
+    round,              // الجولة اللي انفتحت فيها (للمقارنة العادلة)
     priceHistory: [{ t: Date.now(), p: price }],
   };
   const live = acc.tradePnl(trade, price, r);
@@ -477,29 +495,39 @@ function familyOf(scoutId) {
   return [scoutId, ...BOTS.filter(b => b.source === scoutId).map(b => b.id)];
 }
 
-async function runFamily(scoutId, snapshot) {
-  const def = BOT[scoutId];
+// قبل ما نسأل الكشّاف: إذا العائلة كلها موقوفة أو ما فيه مفتاح، نسجّل SKIP ونرجع null
+function familyPrecheck(scoutId) {
   const ids = familyOf(scoutId);
-  const variants = ids.filter(id => BOT[id].kind === 'meeting');
-  const always = ids.filter(id => BOT[id].kind === 'always');
   const blocked = Object.fromEntries(ids.map(id => [id, blockReason(id)]));
-
   // إذا كل أفراد العائلة مشغولين، ما نصرف على الكشّاف
   if (ids.every(id => blocked[id])) {
     ids.forEach(id => recordDecision(id, { action: 'SKIP', reason: blocked[id] }));
-    return;
+    return null;
   }
   if (!DEMO && !KEYS.openrouter) {
     ids.forEach(id => {
       state.bots[id].system.note = 'متوقف: ما فيه OPENROUTER_API_KEY';
       recordDecision(id, { action: 'SKIP', reason: state.bots[id].system.note });
     });
-    return;
+    return null;
   }
+  return blocked;
+}
 
+// نفس الطلب للكل: الكشّافين على السيرفر وكشّاف Fable على جهاز المالك
+function scoutInputs(scoutId, snapshot) {
   const held = activeTrades(scoutId).map(t => t.symbol);
   const allowed = snapshot.map(m => m.symbol).filter(s => !held.includes(s));
   const prompt = ai.decisionPrompt({ news: state.news.text, market: snapshot, held, rules: R() });
+  return { held, allowed, prompt };
+}
+
+async function runFamily(scoutId, snapshot, round = null) {
+  const def = BOT[scoutId];
+  const ids = familyOf(scoutId);
+  if (!familyPrecheck(scoutId)) return;
+
+  const { allowed, prompt } = scoutInputs(scoutId, snapshot);
   let d;
   try {
     d = DEMO ? await ai.mockDecide({ allowed })
@@ -509,6 +537,17 @@ async function runFamily(scoutId, snapshot) {
     log.err(`[${scoutId}] ${e.message}`);
     return;
   }
+  d.round = round;
+  await applyScoutDecision(scoutId, d, snapshot);
+}
+
+// بعد ما يقرر الكشّاف (أياً كان مكانه): الدخول، "يدخل دائماً"، والاجتماع
+async function applyScoutDecision(scoutId, d, snapshot) {
+  const ids = familyOf(scoutId);
+  const variants = ids.filter(id => BOT[id].kind === 'meeting');
+  const always = ids.filter(id => BOT[id].kind === 'always');
+  const blocked = Object.fromEntries(ids.map(id => [id, blockReason(id)]));
+  const round = d.round ?? null;
   // تكلفة كل طريقة لو اشتغلت لحالها: الكل يدفع تكلفة الكشّاف
   ids.forEach(id => { state.bots[id].aiCostUSD += d.costUSD; state.bots[id].system.lastError = null; });
 
@@ -517,7 +556,7 @@ async function runFamily(scoutId, snapshot) {
   const plan = clampPlan(d.plan);
   if (d.symbol) state.system.lastPlan = { ...plan, from: scoutId, symbol: d.symbol, at: Date.now() };
   const scoutBlocked = blocked[scoutId] && isOpportunity;
-  recordDecision(scoutId, { action: scoutBlocked ? 'SKIP' : scoutAction, symbol: d.symbol, plan: d.symbol ? plan : null, confidence: d.confidence, reason: d.reason, costUSD: d.costUSD, model: d.modelUsed, note: scoutBlocked ? blocked[scoutId] : null });
+  recordDecision(scoutId, { action: scoutBlocked ? 'SKIP' : scoutAction, symbol: d.symbol, plan: d.symbol ? plan : null, confidence: d.confidence, reason: d.reason, costUSD: d.costUSD, model: d.modelUsed, note: scoutBlocked ? blocked[scoutId] : null, round, ...(d.usage ? { usage: d.usage } : {}) });
 
   // "يدخل دائماً": يدخل أقوى فرصة سمّاها الكشّاف، أياً كان قراره
   for (const id of always) {
@@ -525,7 +564,7 @@ async function runFamily(scoutId, snapshot) {
     recordDecision(id, { action: blocked[id] ? 'SKIP' : 'BUY', symbol: d.symbol, plan, confidence: d.confidence,
       reason: `الكشّاف قال ${d.action === 'BUY' ? 'اشترِ' : 'انتظر'}: ${d.reason}`, note: blocked[id] || null, costUSD: d.costUSD });
     if (!blocked[id]) {
-      const res = await enterTrade(id, { symbol: d.symbol, confidence: d.confidence, reason: d.reason, ...planOpts(plan) });
+      const res = await enterTrade(id, { symbol: d.symbol, confidence: d.confidence, reason: d.reason, ...planOpts(plan), round });
       if (res.error) state.bots[id].decisions[0].note = res.error;
     }
   }
@@ -541,7 +580,7 @@ async function runFamily(scoutId, snapshot) {
     return;
   }
   if (!blocked[scoutId]) {
-    const res = await enterTrade(scoutId, { symbol: d.symbol, confidence: d.confidence, reason: d.reason, ...planOpts(plan) });
+    const res = await enterTrade(scoutId, { symbol: d.symbol, confidence: d.confidence, reason: d.reason, ...planOpts(plan), round });
     if (res.error) state.bots[scoutId].decisions[0].note = res.error;
   }
   if (variants.length) await holdMeeting(scoutId, d, snapshot, blocked, plan, { shadow: false });
@@ -626,7 +665,7 @@ async function holdMeeting(scoutId, d, snapshot, blocked, plan, { shadow = false
         costUSD: membersCost + (isModel ? chairCost : 0),
       });
       if (enter && !blocked[id]) {
-        const res = await enterTrade(id, { symbol, confidence: dec.confidence, reason: `اجتماع: ${dec.reason}`, ...planOpts(plan) });
+        const res = await enterTrade(id, { symbol, confidence: dec.confidence, reason: `اجتماع: ${dec.reason}`, ...planOpts(plan), round: d.round ?? null });
         if (res.error) state.bots[id].decisions[0].note = res.error;
       }
     }
@@ -648,7 +687,7 @@ async function recordOpportunity(scoutId, d, plan, votes, modelDecision, ruleDec
     amount: r.tradeAmount, qty, entryPrice: fill,
     takeProfit: fill * (1 + plan.takeProfitPercent / 100), stopLoss: fill * (1 + plan.stopLossPercent / 100),
     maxTimeMs: Math.round(plan.maxHoldHours * 3_600_000),
-    votes, chairModel: modelDecision, chairRule: ruleDecision, costUSD,
+    votes, chairModel: modelDecision, chairRule: ruleDecision, costUSD, round: d.round ?? null,
     status: 'open', currentPrice: price, pnlUSD: null, pnlPercent: null, closeReason: null, closeTime: null,
   });
   if (state.opportunities.length > 3000) state.opportunities.length = 3000;
@@ -665,8 +704,8 @@ function closeOpportunity(o, reason, observed) {
   dirty = true;
 }
 
-function meetingStats(scoutId) {
-  const all = state.opportunities.filter(o => o.source === scoutId);
+function meetingStats(scoutId, keep = () => true) {
+  const all = state.opportunities.filter(o => o.source === scoutId && keep(o));
   const closed = all.filter(o => o.status !== 'open');
   const won = o => o.status === 'won';
   const avg = a => a.length ? acc.round(a.reduce((s, o) => s + o.pnlUSD, 0) / a.length, 3) : null;
@@ -704,7 +743,114 @@ function meetingStats(scoutId) {
   };
 }
 
-async function runRandomBot() {
+// ── كشّاف Fable: يقرر على جهاز المالك ويرسل القرار هنا ─────────────────────
+// السيرفر يفتح الجولة بنفس لقطة السوق ونفس الأخبار ونفس الطلب، وينتظر 5 دقايق.
+let fableRound = null;   // الجولة المفتوحة الحين (في الذاكرة بس)
+let fableTimer = null;
+const FABLE_ID = 'now-fable';
+
+function openFableRound(roundId, snapshot) {
+  if (fableRound?.status === 'waiting') missFableRound();
+  const f = state.fable;
+  f.rounds++;
+  const blocked = familyPrecheck(FABLE_ID);
+  if (!blocked) {
+    f.skipped++;
+    fableRound = { id: roundId, openedAt: Date.now(), deadline: Date.now(), status: 'skipped' };
+  } else {
+    const { held, allowed, prompt } = scoutInputs(FABLE_ID, snapshot);
+    fableRound = {
+      id: roundId, openedAt: Date.now(), deadline: Date.now() + FABLE_WINDOW_MS, status: 'waiting',
+      snapshot, news: state.news.text, rules: { ...R() }, held, allowed, prompt,
+    };
+    clearTimeout(fableTimer);
+    fableTimer = setTimeout(missFableRound, FABLE_WINDOW_MS);
+    fableTimer.unref?.();
+  }
+  f.lastRound = { id: roundId, status: fableRound.status, at: fableRound.openedAt };
+  dirty = true;
+  return fableRound;
+}
+
+function missFableRound() {
+  if (fableRound?.status !== 'waiting') return;
+  fableRound.status = 'missed';
+  state.fable.missed++;
+  state.fable.lastRound = { id: fableRound.id, status: 'missed', at: fableRound.openedAt };
+  // ما فيه صفقة ولا فرصة: الجولة تنحسب "فاتته" للعائلة كلها
+  for (const id of familyOf(FABLE_ID))
+    recordDecision(id, { action: 'MISSED', reason: 'قرار Fable ما وصل خلال 5 دقايق (الجهاز طافي أو Claude Code ما اشتغل)', round: fableRound.id });
+  log.warn(`Fable فاتته جولة ${new Date(fableRound.id).toISOString()}`);
+  dirty = true;
+}
+
+// يرجع { status, body }. القرار يتطبق بالخلفية (الاجتماع ياخذ وقت)
+function submitFableDecision(body = {}) {
+  const r = fableRound;
+  if (!r) return { status: 409, body: { error: 'ما فيه جولة مفتوحة' } };
+  if (body.roundId !== r.id) return { status: 409, body: { error: 'الجولة مو نفس الجولة المفتوحة', roundId: r.id } };
+  if (r.status !== 'waiting') return { status: 409, body: { error: `الجولة حالتها ${r.status}`, roundId: r.id } };
+  if (Date.now() > r.deadline) { missFableRound(); return { status: 409, body: { error: 'وصل بعد المهلة' } }; }
+  let d;
+  try { d = ai.parseDecision(String(body.text || ''), r.allowed); }
+  catch (e) { return { status: 400, body: { error: `رد Fable مو صالح: ${e.message}` } }; }
+
+  const num = v => (Number.isFinite(Number(v)) ? Number(v) : null);
+  const u = body.usage || {};
+  d.usage = {
+    inputTokens: num(u.inputTokens), outputTokens: num(u.outputTokens),
+    cacheReadTokens: num(u.cacheReadTokens), cacheCreationTokens: num(u.cacheCreationTokens),
+    notionalUSD: num(u.notionalUSD), durationMs: num(u.durationMs),
+  };
+  d.costUSD = 0;                                      // اشتراك المالك، مو فاتورة OpenRouter
+  d.modelUsed = String(body.model || MODELS.fable).slice(0, 80);
+  d.raw = String(body.text || '').slice(0, 500);
+  d.round = r.id;
+
+  r.status = 'decided';
+  clearTimeout(fableTimer);
+  const f = state.fable;
+  f.present++;
+  f.presentRounds.push(r.id);
+  if (f.presentRounds.length > 6000) f.presentRounds.splice(0, f.presentRounds.length - 6000);
+  f.lastRound = { id: r.id, status: 'decided', at: r.openedAt };
+  r.applied = applyScoutDecision(FABLE_ID, d, r.snapshot)
+    .catch(e => log.err(`[${FABLE_ID}] ${e.message}`))
+    .finally(() => { dirty = true; saveDb(); });
+  log.info(`Fable قرر: ${d.action} ${d.symbol || ''} (${d.confidence})`);
+  return { status: 200, body: { accepted: true, roundId: r.id, action: d.action, symbol: d.symbol, confidence: d.confidence } };
+}
+
+function fableSummary() {
+  const { presentRounds, ...f } = state.fable;
+  return {
+    ...f,
+    presentRate: f.rounds - f.skipped ? acc.round(f.present / (f.rounds - f.skipped) * 100, 1) : null,
+    current: fableRound ? { id: new Date(fableRound.id).toISOString(), status: fableRound.status, deadline: new Date(fableRound.deadline).toISOString() } : null,
+  };
+}
+
+// مقارنة عادلة: كل العائلات، بس على الجولات اللي رد فيها Fable
+function fairComparison() {
+  const rounds = new Set(state.fable.presentRounds);
+  const scouts = Object.fromEntries(BOTS.filter(b => b.kind === 'ai').map(b => [b.id, meetingStats(b.id, o => rounds.has(o.round))]));
+  const bots = {};
+  for (const b of BOTS) {
+    if (b.kind === 'hodl' || b.kind === 'webhook') continue;
+    const t = state.bots[b.id].trades.filter(x => rounds.has(x.round));
+    const closed = t.filter(x => x.status !== 'active');
+    const won = closed.filter(x => x.pnlUSD > 0);
+    bots[b.id] = {
+      trades: t.length, open: t.length - closed.length, closed: closed.length,
+      winRate: closed.length ? acc.round(won.length / closed.length * 100, 1) : null,
+      realizedPnlUSD: acc.round(closed.reduce((s, x) => s + (x.pnlUSD || 0), 0)),
+      openPnlUSD: acc.round(t.filter(x => x.status === 'active').reduce((s, x) => s + (x.pnlUSD || 0), 0)),
+    };
+  }
+  return { roundsCompared: rounds.size, note: 'الجولات اللي رد فيها Fable بس', scouts, bots };
+}
+
+async function runRandomBot(round = null) {
   const id = 'random';
   const blocked = blockReason(id);
   if (blocked) { recordDecision(id, { action: 'SKIP', reason: blocked }); return; }
@@ -719,7 +865,7 @@ async function runRandomBot() {
   const plan = state.system.lastPlan || clampPlan({});
   const p = { takeProfitPercent: plan.takeProfitPercent, stopLossPercent: plan.stopLossPercent, maxHoldHours: plan.maxHoldHours };
   recordDecision(id, { action: 'BUY', symbol, reason: 'قرعة', plan: p });
-  const res = await enterTrade(id, { symbol, reason: 'قرعة', ...planOpts(p) });
+  const res = await enterTrade(id, { symbol, reason: 'قرعة', ...planOpts(p), round });
   if (res.error) state.bots[id].decisions[0].note = res.error;
 }
 
@@ -729,6 +875,8 @@ async function decisionCycle() {
   cycleRunning = true;
   try {
     await ensureHodl();
+    // رقم الجولة = بداية ربع الساعة. نفس الرقم لكل العائلات عشان المقارنة
+    const round = Math.floor(Date.now() / (R().decisionIntervalMinutes * 60_000)) * R().decisionIntervalMinutes * 60_000;
     const needsAi = BOTS.some(b => (b.kind === 'ai' || b.kind === 'meeting' || b.kind === 'always') && !blockReason(b.id));
     if (needsAi && (DEMO || KEYS.xai || KEYS.openrouter)) await refreshNews();
     let snapshot = [];
@@ -741,9 +889,10 @@ async function decisionCycle() {
     }));
     // نفس اللقطة ونفس الأخبار للوكيلين، وبنفس اللحظة
     if (snapshot.length) {
-      await Promise.all(BOTS.filter(b => b.kind === 'ai').map(b => runFamily(b.id, snapshot)));
+      openFableRound(round, snapshot);   // Fable ياخذها من جهاز المالك، والباقي يشتغل هني
+      await Promise.all(BOTS.filter(b => b.kind === 'ai' && !b.remote).map(b => runFamily(b.id, snapshot, round)));
     }
-    await runRandomBot();
+    await runRandomBot(round);
   } catch (e) {
     log.err(`جولة القرار: ${e.message}`);
   } finally {
@@ -855,6 +1004,8 @@ function clientSnapshot() {
     keys: { xai: !!KEYS.xai, openrouter: !!KEYS.openrouter, webhook: !!KEYS.webhook },
     models: MODELS,
     meetings: Object.fromEntries(BOTS.filter(b => b.kind === 'ai').map(b => [b.id, meetingStats(b.id)])),
+    fable: fableSummary(),
+    fairComparison: fairComparison(),
     opportunities: state.opportunities.slice(0, 20).map(o => ({
       id: o.id, at: o.at, source: o.source, symbol: o.symbol, scoutConfidence: o.scoutConfidence,
       scoutAction: o.scoutAction, shadow: !!o.shadow, plan: o.plan,
@@ -895,6 +1046,22 @@ app.all('/mcp/:secret', (req, res) => (mcpRoute ||= createMcpHandler({
   secret: KEYS.mcp, tools: mcpTools(), version: require('./package.json').version, log,
   instructions: 'المِحَك: مسابقة تداول ورقي (بدون فلوس حقيقية). اقرا براحتك. لا تغيّر شي إلا إذا المالك طلب، وأكّد معاه قبل بدء/تصفير المسابقة أو إغلاق صفقة.',
 }))(req, res));
+// كشّاف Fable على جهاز المالك: السر (MCP_SECRET) في هيدر x-mihak-secret
+const fableAuthed = req => !!KEYS.mcp && safeEqual(req.get('x-mihak-secret') || '', KEYS.mcp);
+app.get('/api/fable/round', (req, res) => {
+  if (!fableAuthed(req)) return res.status(404).end();
+  const r = fableRound;
+  if (!r) return res.json({ status: 'none', now: Date.now() });
+  const out = { status: r.status, roundId: r.id, openedAt: r.openedAt, deadline: r.deadline, now: Date.now() };
+  if (r.status === 'waiting') Object.assign(out, { snapshot: r.snapshot, news: r.news, rules: r.rules, held: r.held, allowed: r.allowed, prompt: r.prompt });
+  res.json(out);
+});
+app.post('/api/fable/decision', (req, res) => {
+  if (!fableAuthed(req)) return res.status(404).end();
+  const out = submitFableDecision(req.body);
+  res.status(out.status).json(out.body);
+});
+
 // claude.ai يدوّر OAuth هني أول؛ نقول له ما فيه عشان يكمل بدونه
 app.all('/.well-known/*', (_req, res) => res.status(404).end());
 
@@ -919,6 +1086,7 @@ function resetAllBots() {
   state.opportunities.filter(o => o.status === 'open').forEach(o => symbols.add(o.symbol));
   for (const b of BOTS) state.bots[b.id] = freshBot(state.rules);
   state.opportunities = [];
+  state.fable = freshFable();
   symbols.forEach(releaseSymbol);
 }
 
@@ -1047,7 +1215,7 @@ function mcpTools() {
 
   return [
     { name: 'get_overview', annotations: { title: 'نظرة عامة', ...RO },
-      description: "Competition status, leaderboard (return, drawdown, win rate, fees, AI cost, beats random/hodl), keys present, next decision time, news status, and each bot's blocked/paused state, last decision and last error.",
+      description: "Competition status, leaderboard (return, drawdown, win rate, fees, AI cost, beats random/hodl), keys present, next decision time, news status, Fable rounds (present / missed), the fair comparison on Fable rounds, and each bot's blocked/paused state, last decision and last error.",
       inputSchema: obj(),
       run: () => {
         const snap = clientSnapshot();
@@ -1055,6 +1223,8 @@ function mcpTools() {
           mode: snap.mode, competition: snap.competition, keys: snap.keys, models: snap.models,
           serverTime: iso(snap.serverTime), nextDecisionAt: iso(snap.nextDecisionAt),
           news: { at: iso(state.news.at), error: state.news.error, searches: state.news.searches },
+          fable: snap.fable,
+          fairComparison: snap.fairComparison,
           universe: snap.universe,
           leaderboard: snap.leaderboard,
           bots: Object.fromEntries(Object.entries(snap.bots).map(([id, b]) => [id, {
@@ -1098,9 +1268,12 @@ function mcpTools() {
       } },
 
     { name: 'get_meetings', annotations: { title: 'الاجتماعات: هل تضيف قيمة؟', ...RO },
-      description: "Per scout: how often each expert (trend/news/risk) and each chair (model/rule) was right, how the scout's WAITs turned out, and meeting cost.",
+      description: "Per scout: how often each expert (trend/news/risk) and each chair (model/rule) was right, how the scout's WAITs turned out, and meeting cost. Plus fairComparison: every family scored only on rounds where the Fable scout answered.",
       inputSchema: obj(),
-      run: () => Object.fromEntries(BOTS.filter(b => b.kind === 'ai').map(b => [b.id, meetingStats(b.id)])) },
+      run: () => ({
+        ...Object.fromEntries(BOTS.filter(b => b.kind === 'ai').map(b => [b.id, meetingStats(b.id)])),
+        fairComparison: fairComparison(),
+      }) },
 
     { name: 'get_rules', annotations: { title: 'القوانين', ...RO },
       description: 'Current rules, the allowed range of each, and whether they are locked (locked once the official competition starts).',
@@ -1231,4 +1404,4 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 function start() { server.listen(PORT, main); }
 if (require.main === module) start();
 
-module.exports = { start, app, server, _internals: { clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; } } };
+module.exports = { start, app, server, _internals: { openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; } } };

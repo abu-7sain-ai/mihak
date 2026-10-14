@@ -6,3 +6,7 @@ db.json
 db*.json
 *.tmp
 data/
+runner/*.log
+runner/*.log.old
+runner/work/
+runner/.fable-runner.lock
