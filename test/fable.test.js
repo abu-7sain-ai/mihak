@@ -81,6 +81,19 @@ test('no reply in time means MISSED for the whole family, with no trade or oppor
   assert.strictEqual((await post({ roundId: 2_000_000, text: decision('BUY') })).status, 409);
 });
 
+test('a restart in the same quarter does not reopen the round; a lost waiting round counts as missed', () => {
+  const st = S.state();
+  const rounds = st.fable.rounds, missed = st.fable.missed;
+  S.openFableRound(2_000_000, snapshot);                 // نفس الجولة اللي فاتته فوق
+  assert.strictEqual(st.fable.rounds, rounds);
+  assert.strictEqual(st.fable.missed, missed);
+  st.fable.lastRound = { id: 3_000_000, status: 'waiting', at: 3_000_000 };   // انفتحت قبل إعادة التشغيل
+  S.openFableRound(3_000_000, snapshot);
+  assert.strictEqual(st.fable.rounds, rounds);
+  assert.strictEqual(st.fable.missed, missed + 1);
+  assert.strictEqual(st.bots['now-fable'].decisions[0].action, 'MISSED');
+});
+
 test('fair comparison only counts rounds where Fable answered', () => {
   const st = S.state();
   st.opportunities.unshift(

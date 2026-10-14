@@ -754,8 +754,17 @@ let fableTimer = null;
 const FABLE_ID = 'now-fable';
 
 function openFableRound(roundId, snapshot) {
-  if (fableRound?.status === 'waiting') missFableRound();
   const f = state.fable;
+  // نفس الجولة انفتحت قبل (السيرفر رجع اشتغل بنص ربع الساعة): ما نفتحها مرة ثانية
+  if (f.lastRound?.id === roundId) {
+    if (f.lastRound.status === 'waiting' && fableRound?.id !== roundId) {
+      // انفتحت قبل إعادة التشغيل وضاعت من الذاكرة قبل ما يوصل القرار
+      fableRound = { id: roundId, openedAt: f.lastRound.at, deadline: f.lastRound.at, status: 'waiting' };
+      missFableRound();
+    }
+    return fableRound;
+  }
+  if (fableRound?.status === 'waiting') missFableRound();
   f.rounds++;
   const blocked = familyPrecheck(FABLE_ID);
   if (!blocked) {
