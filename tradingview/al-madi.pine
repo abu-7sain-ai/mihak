@@ -1,0 +1,72 @@
+//@version=6
+// المِحَك · الماضي — استراتيجية شراء فقط (سبوت، بدون رافعة ولا بيع على المكشوف)
+// الشارت: BINANCE:xxxUSDT على فريم 4 ساعات
+// ثلاث طرق تختار بينها من الإعدادات، ونختبرها كلها ونحذف اللي تخسر.
+strategy("المحك · الماضي", overlay = true,
+     initial_capital = 1000, default_qty_type = strategy.cash, default_qty_value = 100,
+     commission_type = strategy.commission.percent, commission_value = 0.15, // 0.1% رسوم + 0.05% انزلاق، لكل جهة
+     pyramiding = 0, process_orders_on_close = true)
+
+// ── الإعدادات ────────────────────────────────────────────────────────────────
+mode      = input.string("اختراق", "الطريقة", options = ["اختراق", "ارتداد", "تقاطع"])
+secret    = input.string("", "WEBHOOK_SECRET (من ملف keys.env)")
+startYear = input.int(2022, "بداية الاختبار (سنة)")
+trendLen  = input.int(200, "متوسط الاتجاه")
+dcLen     = input.int(20, "اختراق: أعلى سعر لآخر كم شمعة")
+stopAtr   = input.float(2.5, "الوقف الأولي × ATR", step = 0.1)
+trailAtr  = input.float(3.0, "الوقف المتحرك × ATR", step = 0.1)
+
+// ── المؤشرات ─────────────────────────────────────────────────────────────────
+ema200 = ta.ema(close, trendLen)
+e20    = ta.ema(close, 20)
+e50    = ta.ema(close, 50)
+atr    = ta.atr(14)
+rsi2   = ta.rsi(close, 2)
+sma5   = ta.sma(close, 5)
+upper  = ta.highest(high, dcLen)[1]
+
+uptrend = close > ema200 and ema200 > ema200[5]   // ما نشتري إلا والاتجاه الكبير صاعد
+
+// ── إشارة الدخول حسب الطريقة ─────────────────────────────────────────────────
+sigBreak = close > upper                 // اختراق: السعر كسر أعلى قمة لآخر 20 شمعة
+sigPull  = rsi2 < 10                     // ارتداد: نزلة حادة قصيرة داخل اتجاه صاعد
+sigCross = ta.crossover(e20, e50)        // تقاطع: المتوسط 20 قطع فوق 50
+sig = mode == "اختراق" ? sigBreak : mode == "ارتداد" ? sigPull : sigCross
+
+inTest = year(time) >= startYear
+flat   = strategy.position_size == 0
+
+// ── رسائل الويبهوك للمحك ─────────────────────────────────────────────────────
+coin = syminfo.ticker
+msgOf(string action, string reason, float stopPct) =>
+    '{"secret":"' + secret + '","action":"' + action + '","symbol":"' + coin + '"' +
+     (na(stopPct) ? '' : ',"stopLossPercent":' + str.tostring(stopPct, "#.##")) +
+     ',"reason":"' + reason + '"}'
+
+var float initStop = na
+var float trail    = na
+
+if flat
+    initStop := na
+    trail    := na
+
+if inTest and flat and uptrend and sig
+    stopPct  = math.min(math.max(stopAtr * atr / close * 100, 1.0), 15.0)
+    initStop := close * (1 - stopPct / 100)
+    trail    := initStop
+    strategy.entry("شراء", strategy.long, alert_message = msgOf("buy", "الماضي: " + mode, stopPct))
+
+// ── الخروج ───────────────────────────────────────────────────────────────────
+if strategy.position_size > 0
+    trail := math.max(nz(trail, initStop), close - trailAtr * atr)
+    exitPull  = mode == "ارتداد" and close > sma5                      // ارتداد: نطلع أول ما يرجع فوق متوسط 5
+    exitTrend = mode != "ارتداد" and (close < trail or close < ema200)  // اختراق/تقاطع: وقف متحرك أو كسر الاتجاه
+    if exitPull or exitTrend
+        strategy.close("شراء", comment = "خروج", alert_message = msgOf("sell", "الماضي: خروج", na))
+    // وقف الحماية داخل الشمعة (نفس الوقف اللي يوصل للمحك)
+    strategy.exit("وقف", "شراء", stop = initStop, alert_message = msgOf("sell", "الماضي: وقف", na))
+
+// ── الرسم ────────────────────────────────────────────────────────────────────
+plot(ema200, "متوسط الاتجاه", color.new(color.gray, 0), 2)
+plot(strategy.position_size > 0 ? trail : na, "الوقف المتحرك", color.new(color.red, 0), 1, plot.style_linebr)
+plot(mode == "اختراق" ? upper : na, "قمة الاختراق", color.new(color.teal, 60), 1, plot.style_linebr)

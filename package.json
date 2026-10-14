@@ -1,0 +1,21 @@
+{
+  "name": "ghost-trader",
+  "version": "3.0.0",
+  "description": "المِحَك (Mihak) — مسابقة تداول ورقي تكشف أي طريقة تربح فعلاً",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:env": "node --env-file=.env server.js",
+    "demo": "node demo.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.14.2"
+  },
+  "engines": {
+    "node": ">=20.6.0"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

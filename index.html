@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>المِحَك · Mihak — The Touchstone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── VARIABLES ─────────────────────────────────────────────────────────── */
+:root {
+  --bg:       #05050c;
+  --s1:       #0b0b14;
+  --s2:       #111120;
+  --s3:       #181828;
+  --bd:       #1e1e32;
+  --bd2:      #2a2a45;
+  --accent:   #00d4a0;
+  --danger:   #ff3d5e;
+  --info:     #3d8ef8;
+  --warn:     #f5a623;
+  --text:     #dde4f0;
+  --muted:    #7a8499;
+  --dim:      #3a3f52;
+  --mono:     'Fira Code', monospace;
+  --sans:     'Cairo', sans-serif;
+  --radius:   12px;
+  --radius-s: 8px;
+  --glow-g:   0 0 20px rgba(0,212,160,.25);
+  --glow-r:   0 0 20px rgba(255,61,94,.25);
+  --nav-h:    60px;
+  --header-h: 72px;
+}
+/* ─── RESET ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+}
+button { cursor: pointer; font-family: var(--sans); border: none; outline: none; }
+input, select { font-family: var(--sans); }
+a { color: inherit; text-decoration: none; }
+/* ─── SCROLLBAR ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--s1); }
+::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 99px; }
+/* ─── HEADER ────────────────────────────────────────────────────────────── */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--header-h);
+  background: rgba(5,5,12,.85);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--bd);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px;
+}
+.header-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 1.05rem; font-weight: 700; letter-spacing: .02em;
+}
+.logo-icon {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), #00a07a);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; flex-shrink: 0;
+  box-shadow: var(--glow-g);
+}
+.header-balance {
+  margin-right: auto;
+  text-align: left;
+}
+.header-balance .lbl { font-size: .7rem; color: var(--muted); }
+.header-balance .val {
+  font-family: var(--mono); font-size: 1.25rem; font-weight: 600; color: #fff;
+  letter-spacing: -.02em;
+}
+.header-badges { display: flex; align-items: center; gap: 8px; }
+.badge {
+  padding: 4px 10px; border-radius: 99px; font-size: .7rem; font-weight: 700;
+  letter-spacing: .05em; border: 1px solid;
+}
+.badge-ok    { background: rgba(0,212,160,.12); color: var(--accent); border-color: rgba(0,212,160,.25); }
+.badge-off   { background: rgba(120,120,160,.12); color: var(--muted); border-color: var(--bd); }
+.badge-warn  { background: rgba(245,166,35,.12); color: var(--warn); border-color: rgba(245,166,35,.25); }
+.badge-danger{ background: rgba(255,61,94,.12); color: var(--danger); border-color: rgba(255,61,94,.25); }
+/* ─── NAVIGATION ────────────────────────────────────────────────────────── */
+.nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(5,5,12,.95);
+  backdrop-filter: blur(24px);
+  border-top: 1px solid var(--bd);
+  display: flex;
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 4px; background: none;
+  color: var(--muted); font-size: .65rem; font-weight: 600;
+  padding: 8px 4px; transition: color .2s;
+  letter-spacing: .03em;
+}
+.nav-btn .nav-icon { font-size: 1.3rem; transition: transform .2s; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn.active .nav-icon { transform: scale(1.15); }
+/* ─── MAIN ──────────────────────────────────────────────────────────────── */
+.main {
+  padding: calc(var(--header-h) + 16px) 16px 16px;
+  max-width: 900px; margin: 0 auto;
+}
+/* ─── VIEWS ─────────────────────────────────────────────────────────────── */
+.view { display: none; animation: fadeIn .25s ease; }
+.view.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* ─── CARD ──────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--s1);
+  border: 1px solid var(--bd);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.card-title {
+  font-size: .75rem; font-weight: 700; color: var(--muted);
+  letter-spacing: .1em; text-transform: uppercase; margin-bottom: 14px;
+}
+/* ─── STATS GRID ────────────────────────────────────────────────────────── */
+.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+@media (min-width: 600px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+.stat-card {
+  background: var(--s1); border: 1px solid var(--bd);
+  border-radius: var(--radius); padding: 14px 12px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.stat-lbl  { font-size: .68rem; color: var(--muted); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.stat-val  { font-family: var(--mono); font-size: 1.3rem; font-weight: 600; color: #fff; }
+.stat-val.g { color: var(--accent); }
+.stat-val.r { color: var(--danger); }
+.stat-val.b { color: var(--info); }
+.stat-sub  { font-size: .68rem; color: var(--muted); }
+/* ─── EQUITY CHART ──────────────────────────────────────────────────────── */
+.chart-wrap { position: relative; height: 180px; margin-bottom: 0; }
+.chart-wrap canvas { width: 100%; height: 100%; display: block; }
+.chart-labels {
+  position: absolute; top: 6px; left: 0; right: 0;
+  display: flex; justify-content: space-between;
+  padding: 0 8px; pointer-events: none;
+}
+.chart-label { font-family: var(--mono); font-size: .65rem; color: var(--muted); }
+/* ─── STATUS ROW ────────────────────────────────────────────────────────── */
+.status-row {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+}
+.status-item {
+  background: var(--s2); border: 1px solid var(--bd);
+  border-radius: var(--radius-s); padding: 8px 12px;
+  font-size: .7rem; display: flex; flex-direction: column; gap: 2px;
+  flex: 1; min-width: 130px;
+}
+.status-item .si-lbl { color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+.status-item .si-val { font-family: var(--sans); color: var(--text); font-size: .8rem; }
+/* ─── TRADE CARD ────────────────────────────────────────────────────────── */
+.trade-card {
+  background: var(--s1); border: 1px solid var(--bd);
+  border-radius: var(--radius); padding: 14px;
+  margin-bottom: 10px; transition: border-color .2s;
+  position: relative; overflow: hidden;
+}
+.trade-card:hover { border-color: var(--bd2); }
+.trade-card.won  { border-right: 3px solid var(--accent); }
+.trade-card.lost { border-right: 3px solid var(--danger); }
+.trade-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.trade-symbol { font-weight: 700; font-size: 1.05rem; letter-spacing: .02em; flex: 1; }
+.trade-amount { font-family: var(--mono); font-size: .8rem; color: var(--muted); }
+.trade-pnl {
+  font-family: var(--mono); font-size: 1rem; font-weight: 700;
+  margin-right: auto;
+}
+.trade-pnl.pos { color: var(--accent); }
+.trade-pnl.neg { color: var(--danger); }
+.trade-rows { display: flex; flex-direction: column; gap: 6px; }
+.trade-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: .75rem;
+}
+.trade-row .trl { color: var(--muted); }
+.trade-row .trv { font-family: var(--mono); color: var(--text); }
+/* ─── PROGRESS BAR ──────────────────────────────────────────────────────── */
+.progress-wrap {
+  margin: 12px 0 4px;
+  position: relative;
+}
+.progress-labels {
+  display: flex; justify-content: space-between;
+  font-family: var(--mono); font-size: .6rem; color: var(--muted);
+  margin-bottom: 4px;
+}
+.progress-bar {
+  height: 6px; border-radius: 99px;
+  background: var(--s3); position: relative; overflow: visible;
+}
+.progress-fill {
+  height: 100%; border-radius: 99px;
+  transition: width .5s ease;
+  position: absolute; top: 0; right: 0;
+  min-width: 2px;
+}
+.progress-marker {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #fff; border: 2px solid var(--bg);
+  transition: right .5s ease;
+  box-shadow: 0 0 8px rgba(255,255,255,.5);
+  z-index: 1;
+}
+.progress-entry-line {
+  position: absolute; top: -2px; bottom: -2px; width: 1px;
+  background: var(--muted); opacity: .5; z-index: 1;
+}
+/* ─── SPARKLINE ─────────────────────────────────────────────────────────── */
+.sparkline-wrap { height: 40px; margin-top: 10px; }
+.sparkline-wrap canvas { width: 100%; height: 100%; display: block; }
+/* ─── TIMER BADGE ───────────────────────────────────────────────────────── */
+.timer-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .68rem; font-family: var(--mono);
+  background: var(--s3); border-radius: 99px; padding: 3px 8px;
+  color: var(--muted); border: 1px solid var(--bd);
+}
+/* ─── CLOSE BUTTON ──────────────────────────────────────────────────────── */
+.btn-close-trade {
+  margin-top: 12px; width: 100%; padding: 8px;
+  background: rgba(255,61,94,.1); border: 1px solid rgba(255,61,94,.3);
+  border-radius: var(--radius-s); color: var(--danger);
+  font-size: .75rem; font-weight: 700; letter-spacing: .05em;
+  transition: background .2s;
+}
+.btn-close-trade:hover { background: rgba(255,61,94,.2); }
+/* ─── HISTORY ───────────────────────────────────────────────────────────── */
+.filter-row {
+  display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.filter-btn {
+  padding: 6px 14px; border-radius: 99px; font-size: .72rem; font-weight: 700;
+  background: var(--s2); border: 1px solid var(--bd); color: var(--muted);
+  transition: all .2s; letter-spacing: .05em;
+}
+.filter-btn.active { background: var(--s3); border-color: var(--accent); color: var(--accent); }
+.search-input {
+  flex: 1; min-width: 120px; padding: 7px 12px;
+  background: var(--s2); border: 1px solid var(--bd);
+  border-radius: var(--radius-s); color: var(--text); font-size: .8rem;
+}
+.search-input::placeholder { color: var(--dim); }
+/* ─── ANALYTICS ─────────────────────────────────────────────────────────── */
+.analytics-grid { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+@media (max-width: 480px) { .analytics-grid { grid-template-columns: 1fr; } }
+.donut-wrap { height: 160px; position: relative; }
+.donut-wrap canvas { width: 100%; height: 100%; display: block; }
+.bars-wrap { height: 150px; }
+.bars-wrap canvas { width: 100%; height: 100%; display: block; }
+.analytic-val {
+  font-family: var(--mono); font-size: 1.5rem; font-weight: 700;
+  margin: 6px 0 2px;
+}
+.analytic-sub { font-size: .7rem; color: var(--muted); }
+/* ─── SETTINGS ──────────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 14px; }
+.form-label {
+  display: block; font-size: .72rem; font-weight: 700; color: var(--muted);
+  letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px;
+}
+.form-input {
+  width: 100%; padding: 10px 14px;
+  background: var(--s2); border: 1px solid var(--bd);
+  border-radius: var(--radius-s); color: var(--text);
+  font-size: .9rem; transition: border-color .2s;
+}
+.form-input:focus { border-color: var(--accent); outline: none; }
+.form-hint { font-size: .65rem; color: var(--dim); margin-top: 4px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn-primary {
+  width: 100%; padding: 12px;
+  background: linear-gradient(135deg, rgba(0,212,160,.2), rgba(0,212,160,.1));
+  border: 1px solid rgba(0,212,160,.4); border-radius: var(--radius-s);
+  color: var(--accent); font-size: .85rem; font-weight: 700; letter-spacing: .05em;
+  transition: all .2s;
+}
+.btn-primary:hover { background: linear-gradient(135deg, rgba(0,212,160,.3), rgba(0,212,160,.15)); }
+.btn-danger {
+  width: 100%; padding: 10px;
+  background: rgba(255,61,94,.1); border: 1px solid rgba(255,61,94,.3);
+  border-radius: var(--radius-s); color: var(--danger);
+  font-size: .82rem; font-weight: 700; transition: all .2s;
+}
+.btn-danger:hover { background: rgba(255,61,94,.2); }
+.btn-info {
+  padding: 10px 20px; background: rgba(61,142,248,.1);
+  border: 1px solid rgba(61,142,248,.3); border-radius: var(--radius-s);
+  color: var(--info); font-size: .82rem; font-weight: 700; transition: all .2s;
+}
+.btn-info:hover { background: rgba(61,142,248,.2); }
+.checkbox-group {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--s2); border: 1px solid var(--bd); border-radius: var(--radius-s);
+  padding: 10px 14px;
+}
+.toggle {
+  width: 38px; height: 22px; border-radius: 99px; border: none;
+  background: var(--s3); position: relative; flex-shrink: 0;
+  transition: background .2s;
+}
+.toggle::after {
+  content: ''; position: absolute; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--muted);
+  top: 3px; right: 3px; transition: all .2s;
+}
+.toggle.on { background: rgba(0,212,160,.3); }
+.toggle.on::after { background: var(--accent); right: auto; left: 3px; }
+.toggle-label { font-size: .8rem; flex: 1; }
+/* ─── CIRCUIT BREAKER BANNER ────────────────────────────────────────────── */
+.cb-banner {
+  background: rgba(245,166,35,.08); border: 1px solid rgba(245,166,35,.3);
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.cb-banner-text { font-size: .82rem; }
+.cb-banner-text strong { color: var(--warn); display: block; margin-bottom: 2px; }
+.cb-banner-text span { color: var(--muted); font-size: .75rem; }
+/* ─── EMPTY STATE ───────────────────────────────────────────────────────── */
+.empty {
+  text-align: center; padding: 50px 20px; color: var(--muted);
+}
+.empty .empty-icon { font-size: 3rem; margin-bottom: 14px; opacity: .4; }
+.empty p { font-size: .82rem; line-height: 1.7; }
+/* ─── MODAL ─────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.75); backdrop-filter: blur(8px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .3s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--s1); border: 1px solid var(--bd2);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 24px 20px 32px;
+  width: 100%; max-width: 480px;
+  transform: translateY(20px); transition: transform .3s;
+}
+.modal-overlay.open .modal { transform: none; }
+.modal-title {
+  font-size: 1rem; font-weight: 700; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-close {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--s3);
+  border: none; color: var(--muted); font-size: 1rem; display: flex;
+  align-items: center; justify-content: center;
+}
+.price-preview {
+  background: var(--s2); border: 1px solid var(--bd); border-radius: var(--radius-s);
+  padding: 12px; text-align: center; margin-bottom: 14px;
+}
+.price-preview .pp-lbl { font-size: .68rem; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+.price-preview .pp-val { font-family: var(--mono); font-size: 1.4rem; color: #fff; margin-top: 4px; }
+/* ─── TOAST ─────────────────────────────────────────────────────────────── */
+.toast-container {
+  position: fixed; top: calc(var(--header-h) + 10px); left: 50%;
+  transform: translateX(-50%); z-index: 300;
+  display: flex; flex-direction: column; gap: 8px; align-items: center;
+  pointer-events: none; min-width: 280px;
+}
+.toast {
+  padding: 10px 18px; border-radius: 99px; font-size: .78rem; font-weight: 700;
+  backdrop-filter: blur(16px);
+  animation: toastIn .3s ease, toastOut .3s ease 2.7s forwards;
+  pointer-events: all; max-width: 340px; text-align: center;
+  border: 1px solid;
+}
+.toast.ok     { background: rgba(0,212,160,.15); border-color: rgba(0,212,160,.4); color: var(--accent); }
+.toast.err    { background: rgba(255,61,94,.15);  border-color: rgba(255,61,94,.4);  color: var(--danger); }
+.toast.info   { background: rgba(61,142,248,.15); border-color: rgba(61,142,248,.4); color: var(--info); }
+.toast.warn   { background: rgba(245,166,35,.15); border-color: rgba(245,166,35,.4); color: var(--warn); }
+@keyframes toastIn  { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:none; } }
+@keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateY(-10px); } }
+/* ─── DIVIDER ───────────────────────────────────────────────────────────── */
+.divider { border: none; border-top: 1px solid var(--bd); margin: 16px 0; }
+/* ─── PULSE DOT ─────────────────────────────────────────────────────────── */
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.dot.g { background: var(--accent); animation: pulse-g 2s infinite; }
+.dot.r { background: var(--danger); animation: pulse-r 2s infinite; }
+@keyframes pulse-g { 0%,100%{box-shadow:0 0 0 0 rgba(0,212,160,.4)} 50%{box-shadow:0 0 0 5px rgba(0,212,160,0)} }
+@keyframes pulse-r { 0%,100%{box-shadow:0 0 0 0 rgba(255,61,94,.4)}  50%{box-shadow:0 0 0 5px rgba(255,61,94,0)}  }
+/* ─── RESPONSIVE ────────────────────────────────────────────────────────── */
+@media (min-width: 768px) {
+  .main { padding-top: calc(var(--header-h) + 80px); }
+  .nav { height: auto; padding: 0; border-top: none; border-bottom: 1px solid var(--bd); top: var(--header-h); bottom: auto; }
+  .nav-btn { flex-direction: row; gap: 6px; padding: 10px 14px; font-size: .78rem; }
+  .nav-btn .nav-icon { font-size: 1rem; }
+  body { padding-bottom: 0; }
+}
+/* ─── SKELETON ──────────────────────────────────────────────────────────── */
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skeleton {
+  background: linear-gradient(90deg, var(--s2) 25%, var(--s3) 50%, var(--s2) 75%);
+  background-size: 200% 100%; animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+/* ─── SECTION TITLE ─────────────────────────────────────────────────────── */
+.section-title {
+  font-size: .72rem; font-weight: 700; color: var(--muted);
+  letter-spacing: .1em; text-transform: uppercase;
+  margin-bottom: 10px;
+}
+/* ─── CONFIDENCE PILL ───────────────────────────────────────────────────── */
+.conf {
+  padding: 2px 8px; border-radius: 99px; font-size: .6rem; font-weight: 700;
+  letter-spacing: .06em;
+}
+.conf.HIGH   { background: rgba(0,212,160,.15); color: var(--accent); }
+.conf.MEDIUM { background: rgba(245,166,35,.15); color: var(--warn); }
+.conf.MANUAL { background: rgba(61,142,248,.15); color: var(--info); }
+/* ─── COMPETITION ───────────────────────────────────────────────────────── */
+.bot-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px; }
+.bot-chip {
+  flex-shrink: 0; padding: 7px 14px; border-radius: 99px; font-size: .75rem; font-weight: 700;
+  background: var(--s2); border: 1px solid var(--bd); color: var(--muted); display: flex; align-items: center; gap: 6px;
+}
+.bot-chip .sw { width: 8px; height: 8px; border-radius: 50%; }
+.bot-chip.active { color: var(--text); border-color: var(--bd2); background: var(--s3); }
+.comp-banner {
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; font-size: .8rem; line-height: 1.7;
+  border: 1px solid;
+}
+.comp-banner.warm { background: rgba(245,166,35,.07); border-color: rgba(245,166,35,.3); }
+.comp-banner.live { background: rgba(0,212,160,.07); border-color: rgba(0,212,160,.3); }
+.comp-banner strong { display: block; font-size: .9rem; margin-bottom: 2px; }
+.comp-banner .muted { color: var(--muted); font-size: .72rem; }
+.comp-progress { height: 5px; border-radius: 99px; background: var(--s3); margin-top: 10px; overflow: hidden; }
+.comp-progress > div { height: 100%; background: var(--accent); }
+.lb-row {
+  display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid var(--bd);
+}
+.lb-row:last-child { border-bottom: none; }
+.lb-rank { font-family: var(--mono); font-weight: 700; color: var(--muted); text-align: center; }
+.lb-name { font-weight: 700; font-size: .9rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lb-name .sw { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.lb-meta { font-family: var(--mono); font-size: .66rem; color: var(--muted); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.lb-ret { font-family: var(--mono); font-size: 1.15rem; font-weight: 700; text-align: left; }
+.lb-eq { font-family: var(--mono); font-size: .66rem; color: var(--muted); text-align: left; }
+.tag {
+  padding: 1px 7px; border-radius: 99px; font-size: .6rem; font-weight: 700; border: 1px solid var(--bd2); color: var(--muted);
+}
+.tag.ok { color: var(--accent); border-color: rgba(0,212,160,.35); }
+.tag.no { color: var(--danger); border-color: rgba(255,61,94,.35); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: .68rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 14px; height: 2px; display: inline-block; }
+.news-box { font-size: .75rem; line-height: 1.8; white-space: pre-wrap; color: var(--text); max-height: 260px; overflow-y: auto; }
+.dec-row { display: grid; grid-template-columns: 52px 70px 1fr; gap: 8px; font-size: .72rem; padding: 7px 0; border-bottom: 1px solid var(--bd); }
+.dec-row:last-child { border-bottom: none; }
+.dec-time { font-family: var(--mono); color: var(--muted); }
+.dec-act { font-weight: 700; }
+.dec-act.BUY { color: var(--accent); } .dec-act.SELL { color: var(--info); }
+.dec-act.ERROR { color: var(--danger); } .dec-act.WAIT, .dec-act.SKIP { color: var(--muted); }
+.dec-why { color: var(--muted); }
+.code-box {
+  font-family: var(--mono); font-size: .7rem; background: var(--s2); border: 1px solid var(--bd);
+  border-radius: var(--radius-s); padding: 10px 12px; direction: ltr; text-align: left; white-space: pre-wrap; word-break: break-all;
+}
+.key-row { display: flex; justify-content: space-between; font-size: .78rem; padding: 6px 0; }
+.form-input:disabled { opacity: .5; }
+.fam-meta { display: block; font-weight: 400; font-size: .68rem; color: var(--muted); margin-top: 3px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.chips .tag { white-space: nowrap; }
+table.mt { width: 100%; border-collapse: collapse; font-size: .7rem; }
+table.mt th { color: var(--muted); font-weight: 600; text-align: right; padding: 5px 6px; border-bottom: 1px solid var(--bd); white-space: nowrap; }
+table.mt td { padding: 6px; border-bottom: 1px solid var(--bd); white-space: nowrap; }
+/* numbers keep their sign on the correct side inside RTL text */
+.stat-val, .lb-ret, .lb-eq, .trade-pnl, .analytic-val, .header-balance .val { direction: ltr; unicode-bidi: isolate; }
+.header-balance .val { text-align: left; }
+bdi.n { direction: ltr; unicode-bidi: isolate; font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="header-logo">
+    <div class="logo-icon" style="font-weight:900;color:#05050c">م</div>
+    <span style="display:flex;flex-direction:column;line-height:1.15">المِحَك<small dir="ltr" style="font-size:.6rem;font-weight:600;color:var(--muted);letter-spacing:.06em">Mihak — The Touchstone</small></span>
+  </div>
+  <div class="header-balance">
+    <div class="lbl" id="hdr-label">رأس المال</div>
+    <div class="val" id="hdr-balance">—</div>
+  </div>
+  <div class="header-badges">
+    <span id="mode-badge" class="badge badge-warn" style="display:none">تجربة</span>
+    <span id="ws-badge" class="badge badge-off">غير متصل</span>
+    <span id="cb-badge" class="badge badge-warn" style="display:none">⏸ موقوف</span>
+  </div>
+</header>
+
+<!-- ── NAVIGATION ─────────────────────────────────────────────────────── -->
+<nav class="nav">
+  <button class="nav-btn active" data-view="competition"><span class="nav-icon">🏁</span>المسابقة</button>
+  <button class="nav-btn" data-view="dashboard"><span class="nav-icon">◈</span>المتسابق</button>
+  <button class="nav-btn" data-view="active"><span class="nav-icon">⚡</span>النشطة<span id="nav-active-count" style="display:none;background:var(--accent);color:#000;border-radius:99px;padding:0 6px;font-size:.6rem;margin-right:4px;"></span></button>
+  <button class="nav-btn" data-view="history"><span class="nav-icon">☰</span>السجل</button>
+  <button class="nav-btn" data-view="analytics"><span class="nav-icon">◎</span>التحليلات</button>
+  <button class="nav-btn" data-view="settings"><span class="nav-icon">⚙</span>الإعدادات</button>
+</nav>
+
+<!-- ── MAIN CONTENT ───────────────────────────────────────────────────── -->
+<main class="main">
+
+<!-- ════════ COMPETITION ══════════════════════════════════════════════════ -->
+<section class="view active" id="view-competition">
+  <div id="comp-banner"></div>
+
+  <div class="card">
+    <div class="card-title">الترتيب</div>
+    <div id="leaderboard"></div>
+    <div class="form-hint" style="margin-top:8px">الفائز الحقيقي لازم يغلب الحَكَمين الاثنين. إذا ما غلبهم، ما فيه فائز.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">الاجتماعات: هل تضيف قيمة؟</div>
+    <div class="form-hint" style="margin-bottom:10px">كل فرصة يلقاها الكشّاف تنتابع لين نهايتها حتى لو الاجتماع رفضها. كذا نعرف: الصفقات المرفوضة كانت بتخسر فعلاً؟ وأي خبير صادق أكثر؟</div>
+    <div id="meetings"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">العائد % عبر الزمن</div>
+    <div class="chart-wrap" style="height:220px"><canvas id="race-canvas"></canvas></div>
+    <div class="legend" id="race-legend"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">الأخبار <span id="news-age" style="font-weight:400;letter-spacing:0;text-transform:none"></span></div>
+    <div class="form-label">المواقع (Perplexity) <span id="web-age" style="font-weight:400;letter-spacing:0;text-transform:none"></span></div>
+    <div class="news-box" id="web-box">—</div>
+    <hr class="divider">
+    <div class="form-label">تويتر (Grok) <span id="x-age" style="font-weight:400;letter-spacing:0;text-transform:none"></span></div>
+    <div class="news-box" id="x-box">—</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">آخر قرار لكل متسابق</div>
+    <div id="last-decisions"></div>
+  </div>
+</section>
+
+<div class="bot-chips" id="bot-chips" style="display:none"></div>
+
+<!-- ════════ DASHBOARD (one contestant) ═══════════════════════════════════ -->
+<section class="view" id="view-dashboard">
+  <div class="card" id="bot-desc" style="font-size:.8rem;line-height:1.7"></div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-lbl">الأرباح</div>
+      <div class="stat-val g" id="stat-profit">—</div>
+      <div class="stat-sub" id="stat-wins">— صفقة رابحة</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-lbl">الخسائر</div>
+      <div class="stat-val r" id="stat-loss">—</div>
+      <div class="stat-sub" id="stat-losses">— صفقة خاسرة</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-lbl">نسبة الفوز</div>
+      <div class="stat-val b" id="stat-winrate">—</div>
+      <div class="stat-sub" id="stat-closed">— صفقة مغلقة</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-lbl">الصفقات النشطة</div>
+      <div class="stat-val" id="stat-active">—</div>
+      <div class="stat-sub" id="stat-today-pnl">اليوم: —</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">منحنى رأس المال</div>
+    <div class="chart-wrap">
+      <canvas id="equity-canvas"></canvas>
+      <div class="chart-labels">
+        <span class="chart-label" id="chart-start">—</span>
+        <span class="chart-label" id="chart-current">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-row">
+    <div class="status-item">
+      <div class="si-lbl">آخر قرار</div>
+      <div class="si-val" id="sys-last-ai">—</div>
+    </div>
+    <div class="status-item">
+      <div class="si-lbl">الجولة القادمة</div>
+      <div class="si-val" id="sys-next-ai">—</div>
+    </div>
+    <div class="status-item">
+      <div class="si-lbl">نشاط اليوم</div>
+      <div class="si-val" id="sys-today">—</div>
+    </div>
+    <div class="status-item">
+      <div class="si-lbl">أكبر تراجع</div>
+      <div class="si-val" id="sys-drawdown">—</div>
+    </div>
+    <div class="status-item">
+      <div class="si-lbl">الرسوم المدفوعة</div>
+      <div class="si-val" id="sys-fees">—</div>
+    </div>
+    <div class="status-item">
+      <div class="si-lbl">تكلفة الذكاء الاصطناعي</div>
+      <div class="si-val" id="sys-aicost">—</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">سجل القرارات</div>
+    <div id="decision-list"></div>
+  </div>
+
+</section>
+
+<!-- ════════ ACTIVE TRADES ═════════════════════════════════════════════════ -->
+<section class="view" id="view-active">
+  <div id="cb-banner-active"></div>
+  <div id="active-list"></div>
+</section>
+
+<!-- ════════ HISTORY ═══════════════════════════════════════════════════════ -->
+<section class="view" id="view-history">
+  <div class="filter-row">
+    <button class="filter-btn active" data-filter="all">الكل</button>
+    <button class="filter-btn" data-filter="won">رابحة</button>
+    <button class="filter-btn" data-filter="lost">خاسرة</button>
+    <button class="filter-btn" data-filter="manual">إغلاق يدوي</button>
+    <input class="search-input" id="history-search" placeholder="ابحث عن رمز...">
+  </div>
+  <div id="history-list"></div>
+</section>
+
+<!-- ════════ ANALYTICS ════════════════════════════════════════════════════ -->
+<section class="view" id="view-analytics">
+
+  <div class="analytics-grid">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">نسبة الفوز</div>
+      <div class="donut-wrap"><canvas id="donut-canvas"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">ربح/خسارة يومي (7 أيام)</div>
+      <div class="bars-wrap"><canvas id="bars-canvas"></canvas></div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px" class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-lbl">أفضل صفقة</div>
+      <div class="stat-val g" id="an-best">—</div>
+      <div class="stat-sub" id="an-best-sym">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-lbl">أسوأ صفقة</div>
+      <div class="stat-val r" id="an-worst">—</div>
+      <div class="stat-sub" id="an-worst-sym">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-lbl">متوسط الاحتفاظ</div>
+      <div class="stat-val" id="an-hold">—</div>
+      <div class="stat-sub">دقيقة</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-lbl">صافي الأسبوع</div>
+      <div class="stat-val" id="an-week">—</div>
+      <div class="stat-sub" id="an-week-sub">—</div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ════════ SETTINGS ═════════════════════════════════════════════════════ -->
+<section class="view" id="view-settings">
+  <div id="settings-cb-banner"></div>
+
+  <div class="card">
+    <div class="card-title">المسابقة</div>
+    <div id="comp-controls"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">قوانين المسابقة <span id="rules-lock" style="font-weight:400;letter-spacing:0;text-transform:none"></span></div>
+    <div class="form-hint" style="margin-bottom:12px">نفس القوانين للكل. تنقفل لما تبدأ المسابقة الرسمية وما تتغير بالنص.</div>
+
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">الرصيد الابتدائي ($)</label><input class="form-input rule" data-k="startingBalance" type="number" step="100"></div>
+      <div class="form-group"><label class="form-label">مبلغ الصفقة ($)</label><input class="form-input rule" data-k="tradeAmount" type="number" step="10"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">أقصى صفقات مفتوحة</label><input class="form-input rule" data-k="maxConcurrentTrades" type="number" step="1"></div>
+      <div class="form-group"></div>
+    </div>
+    <div class="form-hint" style="margin:4px 0 8px">الهدف والوقف والمدة تحددها التوصية نفسها، داخل هالحدود:</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">أقرب وقف خسارة %</label><input class="form-input rule" data-k="minStopPercent" type="number" step="0.1"></div>
+      <div class="form-group"><label class="form-label">أبعد وقف خسارة %</label><input class="form-input rule" data-k="maxStopPercent" type="number" step="0.5"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">الهدف لازم يكون على الأقل × الوقف</label><input class="form-input rule" data-k="minRewardRisk" type="number" step="0.1"></div>
+      <div class="form-group"><label class="form-label">أبعد هدف ربح %</label><input class="form-input rule" data-k="maxTakeProfitPercent" type="number" step="1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">أقل مدة للصفقة (ساعة)</label><input class="form-input rule" data-k="minHoldHours" type="number" step="0.5"></div>
+      <div class="form-group"><label class="form-label">أطول مدة للصفقة (ساعة)</label><input class="form-input rule" data-k="maxHoldHours" type="number" step="1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">الرسوم لكل جهة %</label><input class="form-input rule" data-k="feePercent" type="number" step="0.01"></div>
+      <div class="form-group"><label class="form-label">الانزلاق %</label><input class="form-input rule" data-k="slippagePercent" type="number" step="0.01"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">حد الخسارة اليومي %</label><input class="form-input rule" data-k="dailyLossLimitPercent" type="number" step="0.5"></div>
+      <div class="form-group"><label class="form-label">خسائر متتالية توقف المتسابق</label><input class="form-input rule" data-k="consecutiveLossLimit" type="number" step="1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">مدة الإيقاف المؤقت (ساعة)</label><input class="form-input rule" data-k="cooldownHours" type="number" step="1"></div>
+      <div class="form-group"><label class="form-label">كل كم دقيقة جولة قرار</label><input class="form-input rule" data-k="decisionIntervalMinutes" type="number" step="5"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">كل كم دقيقة أخبار المواقع</label><input class="form-input rule" data-k="newsIntervalMinutes" type="number" step="5"><div class="form-hint">Perplexity، رخيص.</div></div>
+      <div class="form-group"><label class="form-label">كل كم دقيقة نبض تويتر</label><input class="form-input rule" data-k="xIntervalMinutes" type="number" step="15"><div class="form-hint">Grok، أغلى جزء.</div></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">أقل ثقة للدخول (0-100)</label><input class="form-input rule" data-k="minConfidence" type="number" step="5"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">احتمال دخول العشوائي (0-1)</label><input class="form-input rule" data-k="randomEntryProbability" type="number" step="0.1"></div>
+      <div class="form-group"><label class="form-label">وقف "الماضي" الافتراضي %</label><input class="form-input rule" data-k="strategyStopLossPercent" type="number" step="0.5"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">المدير بالكود: كم خبير يوافق (من 3)</label><input class="form-input rule" data-k="ruleChairMinVotes" type="number" step="1"></div>
+      <div class="form-group"><label class="form-label">المدير بالكود: أقل متوسط ثقة</label><input class="form-input rule" data-k="ruleChairMinConfidence" type="number" step="5"></div>
+    </div>
+    <button class="btn-primary" id="btn-save-rules" onclick="saveRules()">حفظ القوانين</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">المفاتيح والربط</div>
+    <div id="keys-status"></div>
+    <hr class="divider">
+    <div class="form-label">ربط "الماضي" مع TradingView</div>
+    <div class="form-hint" style="margin-bottom:6px">في تنبيه TradingView: حط هذا الرابط في خانة Webhook URL</div>
+    <div class="code-box" id="webhook-url">—</div>
+    <div class="form-hint" style="margin:10px 0 6px">وهذا نص التنبيه (Message). غيّر SECRET لكلمة سر الويبهوك:</div>
+    <div class="code-box">{"secret":"SECRET","action":"{{strategy.order.action}}","symbol":"{{ticker}}","reason":"{{strategy.order.comment}}"}</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">العملات المسموحة (حلال)</div>
+    <div class="form-hint" id="universe-list">—</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">أدوات</div>
+    <button class="btn-info" onclick="exportData()">📥 تصدير كل البيانات</button>
+  </div>
+</section>
+
+</main>
+
+<!-- ── TOAST CONTAINER ─────────────────────────────────────────────────── -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ════════ JAVASCRIPT ════════════════════════════════════════════════════ -->
+<script>
+// ── HELPERS ───────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fmt  = (v, d=2) => { const n = parseFloat(v); return isNaN(n) ? '—' : n.toFixed(d); };
+const fmtP = (v) => {
+  const n = parseFloat(v); if (isNaN(n)) return '—';
+  if (n >= 10000) return n.toFixed(2);
+  if (n >= 100)   return n.toFixed(3);
+  if (n >= 1)     return n.toFixed(4);
+  return n.toFixed(6);
+};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sign = n => (n >= 0 ? '+' : '') + fmt(n);
+const num = v => `<bdi class="n" dir="ltr">${v}</bdi>`;
+const clock = ts => new Date(ts).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+
+const BOT_COLORS = {
+  'now-qwen': '#00d4a0', 'now-qwen-chair': '#7ff0d0', 'now-qwen-rule': '#0a8f6c', 'now-qwen-always': '#c6f26b',
+  'now-deepseek': '#3d8ef8', 'now-deepseek-chair': '#9cc3ff', 'now-deepseek-rule': '#1f56c9', 'now-deepseek-always': '#ff7eb6',
+  'past-strategy': '#f5a623', 'random': '#b48cff', 'hodl': '#7a8499',
+};
+const ROLE_AR = { trend: 'الاتجاه', news: 'الأخبار', risk: 'المخاطر' };
+const voteChips = votes => votes ? Object.entries(votes).map(([k, v]) =>
+  `<span class="tag ${v.vote === 'ENTER' ? 'ok' : 'no'}" title="${esc(v.reason || '')}">${v.vote === 'ENTER' ? '✓' : '✗'} ${ROLE_AR[k] || k} ${num(v.confidence)}</span>`).join(' ') : '';
+
+// ── STATE ────────────────────────────────────────────────────────────────
+let G = null;          // full competition state from server
+let S = null;          // view of the selected contestant (shape the old screens expect)
+let currentBot = (() => { try { return localStorage.getItem('gt-bot') || 'now-qwen'; } catch { return 'now-qwen'; } })();
+let ws = null;
+let wsRetryDelay = 2000;
+let historyFilter = 'all';
+let historySearch = '';
+let rulesDirty = false;
+
+function botView() {
+  if (!G) return null;
+  if (!G.bots[currentBot]) currentBot = Object.keys(G.bots)[0];
+  const b = G.bots[currentBot];
+  const now = Date.now();
+  const closed = b.trades.filter(t => t.status !== 'active');
+  const today = new Date().toDateString();
+  const todays = closed.filter(t => new Date(t.closeTime).toDateString() === today);
+  const week = closed.filter(t => t.closeTime >= now - 7 * 86400000);
+  const sum = a => a.reduce((s, t) => s + t.pnlUSD, 0);
+  const paused = !!(b.cb.pausedUntil && b.cb.pausedUntil > now);
+  return {
+    id: currentBot, def: b.def, balance: b.equity, cash: b.balance, equity: b.equity,
+    trades: b.trades, balanceHistory: b.balanceHistory, decisions: b.decisions, blocked: b.blocked,
+    stats: {
+      ...b.stats,
+      consecutiveLosses: b.cb.consecutiveLosses,
+      isCircuitBreakerActive: paused,
+      pausedUntil: b.cb.pausedUntil,
+    },
+    rawStats: b.stats,
+    config: G.rules,
+    system: { lastAiFetch: b.system.lastRun, nextAiFetch: G.nextDecisionAt, lastError: b.system.lastError, note: b.system.note },
+    todayStats: { wins: todays.filter(t => t.pnlUSD > 0).length, losses: todays.filter(t => t.pnlUSD <= 0).length, net: sum(todays) },
+    weekStats: { wins: week.filter(t => t.pnlUSD > 0).length, losses: week.filter(t => t.pnlUSD <= 0).length, net: sum(week) },
+    maxDrawdown: b.stats.maxDrawdown,
+  };
+}
+
+// ── WEBSOCKET ────────────────────────────────────────────────────────────
+function connectWS() {
+  ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`);
+  ws.onopen = () => { setBadge('ws-badge', 'متصل', 'ok'); wsRetryDelay = 2000; };
+  ws.onmessage = e => {
+    try { G = JSON.parse(e.data); S = botView(); renderAll(); } catch (err) { console.error(err); }
+  };
+  ws.onclose = () => {
+    setBadge('ws-badge', 'غير متصل', 'off');
+    setTimeout(connectWS, wsRetryDelay);
+    wsRetryDelay = Math.min(wsRetryDelay * 1.5, 30000);
+  };
+  ws.onerror = () => ws.close();
+}
+
+// ── RENDER ALL ───────────────────────────────────────────────────────────
+function currentView() { return document.querySelector('.view.active')?.id?.replace('view-', ''); }
+
+function renderAll() {
+  if (!G || !S) return;
+  renderHeader();
+  const cur = currentView();
+  $('bot-chips').style.display = (cur === 'competition' || cur === 'settings') ? 'none' : 'flex';
+  renderChips();
+  if (cur === 'competition') renderCompetition();
+  else if (cur === 'dashboard') renderDashboard();
+  else if (cur === 'active') renderActive();
+  else if (cur === 'history') renderHistory();
+  else if (cur === 'analytics') renderAnalytics();
+  else if (cur === 'settings') renderSettings();
+  const cnt = $('nav-active-count');
+  const n = S.trades.filter(t => t.status === 'active').length;
+  if (n > 0) { cnt.textContent = n; cnt.style.display = 'inline'; } else cnt.style.display = 'none';
+}
+
+function renderChips() {
+  $('bot-chips').innerHTML = Object.values(G.bots).map(b => `
+    <button class="bot-chip ${b.def.id === currentBot ? 'active' : ''}" onclick="selectBot('${b.def.id}')">
+      <span class="sw" style="background:${BOT_COLORS[b.def.id]}"></span>${esc(b.def.name)}
+    </button>`).join('');
+}
+
+function selectBot(id) {
+  currentBot = id;
+  try { localStorage.setItem('gt-bot', id); } catch {}
+  S = botView(); renderAll();
+}
+
+// ── HEADER ───────────────────────────────────────────────────────────────
+function renderHeader() {
+  const onComp = currentView() === 'competition';
+  $('hdr-label').textContent = onComp ? 'المسابقة' : S.def.name;
+  if (onComp) {
+    const live = G.competition.startedAt;
+    $('hdr-balance').textContent = live ? `اليوم ${Math.floor((Date.now() - live) / 86400000) + 1}` : 'إحماء';
+  } else {
+    $('hdr-balance').textContent = '$' + fmt(S.equity);
+  }
+  $('mode-badge').style.display = G.mode === 'demo' ? '' : 'none';
+  $('cb-badge').style.display = (!onComp && S.stats.isCircuitBreakerActive) ? '' : 'none';
+}
+
+// ── COMPETITION ──────────────────────────────────────────────────────────
+const COMP_DAYS = 56;
+function renderCompetition() {
+  const c = G.competition;
+  if (c.startedAt) {
+    const days = (Date.now() - c.startedAt) / 86400000;
+    const pct = Math.min(100, days / COMP_DAYS * 100);
+    $('comp-banner').innerHTML = `<div class="comp-banner live">
+      <strong>🏁 المسابقة الرسمية شغالة — اليوم ${Math.floor(days) + 1} من ${COMP_DAYS}</strong>
+      <span class="muted">بدأت ${new Date(c.startedAt).toLocaleDateString('ar-EG')} · القوانين مقفولة · كل المتسابقين بدأوا بنفس اللحظة</span>
+      <div class="comp-progress"><div style="width:${pct.toFixed(1)}%"></div></div></div>`;
+  } else {
+    $('comp-banner').innerHTML = `<div class="comp-banner warm">
+      <strong>🔧 وضع الإحماء</strong>
+      <span class="muted">النتائج هنا للتجربة بس. لما يكون كل شي جاهز (ومنه استراتيجية "الماضي")، ابدأ المسابقة الرسمية من الإعدادات: تتصفّر الأرقام وتنقفل القوانين.</span></div>`;
+  }
+
+  $('leaderboard').innerHTML = G.leaderboard.map((r, i) => {
+    const b = G.bots[r.id];
+    const col = r.returnPct >= 0 ? 'var(--accent)' : 'var(--danger)';
+    const tags = r.referee ? '<span class="tag">حَكَم</span>' :
+      `<span class="tag ${r.beatsRandom ? 'ok' : 'no'}">${r.beatsRandom ? '✓' : '✗'} العشوائي</span>
+       <span class="tag ${r.beatsHodl ? 'ok' : 'no'}">${r.beatsHodl ? '✓' : '✗'} الاحتفاظ</span>`;
+    const small = !r.referee && r.trades < 30 ? '<span class="tag">عينة صغيرة</span>' : '';
+    const blocked = b.blocked && r.id !== 'hodl' ? `<span title="${esc(b.blocked)}">⏸ ${esc(b.blocked)}</span>` : '';
+    return `<div class="lb-row" onclick="selectBot('${r.id}');goView('dashboard')" style="cursor:pointer">
+      <div class="lb-rank">${i + 1}</div>
+      <div>
+        <div class="lb-name"><span class="sw" style="background:${BOT_COLORS[r.id]}"></span>${esc(r.name)} ${tags} ${small}</div>
+        <div class="lb-meta">
+          <span>تراجع ${num(fmt(r.maxDrawdown) + '%')}</span>
+          <span>عائد/تراجع ${r.returnToDrawdown == null ? '—' : num(fmt(r.returnToDrawdown))}</span>
+          ${r.id === 'hodl' ? '' : `<span>${num(r.trades)} صفقة · فوز ${num(fmt(r.winRate, 0) + '%')}</span>`}
+          <span>رسوم ${num('$' + fmt(r.feesPaid))}</span>
+          ${(b.def.kind === 'ai' || b.def.kind === 'meeting' || b.def.kind === 'always') ? `<span>ذكاء اصطناعي ${num('$' + fmt(r.aiCostUSD, 2))}</span>` : ''}
+          ${blocked}
+        </div>
+      </div>
+      <div><div class="lb-ret" style="color:${col}">${sign(r.returnPct)}%</div><div class="lb-eq">$${fmt(r.equity)}</div></div>
+    </div>`;
+  }).join('');
+
+  const n = G.news;
+  const noKey = !(G.keys.xai || G.keys.openrouter || G.mode === 'demo');
+  const part = (p, boxId, ageId) => {
+    $(boxId).textContent = p?.text || (noKey ? 'ما فيه مفتاح OpenRouter.' : 'ما وصل شي للحين.');
+    $(ageId).textContent = p?.at ? `· ${timeAgo(p.at)}${p.costUSD != null ? ' · $' + fmt(p.costUSD, 3) : ''}${p.error ? ' · آخر محاولة فشلت' : ''}` : (p?.error ? '· فشلت' : '');
+  };
+  part(n.web, 'web-box', 'web-age');
+  part(n.x, 'x-box', 'x-age');
+  $('news-age').textContent = n.totalCostUSD ? `· مجموع تكلفة الأخبار $${fmt(n.totalCostUSD, 2)}` : '';
+
+  $('last-decisions').innerHTML = Object.values(G.bots).filter(b => b.def.id !== 'hodl').map(b => {
+    const d = b.decisions[0];
+    return `<div class="dec-row" style="grid-template-columns:150px 60px 1fr">
+      <span style="font-weight:700"><span class="sw" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${BOT_COLORS[b.def.id]}"></span> ${esc(b.def.name)}</span>
+      ${d ? `<span class="dec-act ${esc(d.action.split(' ')[0])}">${esc(actionLabel(d.action))}</span>
+      <span class="dec-why">${d.symbol ? esc(d.symbol.replace('USDT', '')) + ' ' + planTxt(d.plan) + ' · ' : ''}${d.confidence != null ? 'ثقة ' + d.confidence + ' · ' : ''}${esc(d.reason || '')}${d.note ? ' — ' + esc(d.note) : ''} <span class="dec-time">${timeAgo(d.at)}</span></span>`
+      : '<span class="dec-why" style="grid-column:span 2">ما قرر شي للحين</span>'}
+    </div>`;
+  }).join('');
+
+  renderMeetings();
+  requestAnimationFrame(drawRace);
+}
+
+const planTxt = p => p ? `<span class="tag" title="${p.adjusted ? 'الكود عدّل اقتراح التوصية عشان يدخل الحدود' : ''}">${num('+' + fmt(p.takeProfitPercent, 1) + '%')} / ${num(fmt(p.stopLossPercent, 1) + '%')} · ${num(fmt(p.maxHoldHours, 0))}س${p.adjusted ? ' ✎' : ''}</span>` : '';
+
+function renderMeetings() {
+  const pct = v => v == null ? '—' : num(fmt(v, 0) + '%');
+  const usd = v => v == null ? '—' : num((v >= 0 ? '+' : '') + '$' + fmt(v, 2));
+  const fam = Object.entries(G.meetings || {}).map(([src, m]) => {
+    const name = G.bots[src]?.def.name.split(' · ')[0] || src;
+    const c = m.chairs;
+    const chairRow = (label, x) => `<tr><td>${label}</td><td>${num(x.approved)} / ${num(x.rejected)}</td><td>${usd(x.approvedAvgPnl)}</td><td>${usd(x.rejectedAvgPnl)}</td><td>${num(x.rejectedThatLost)}</td><td>${pct(x.accuracy)}</td></tr>`;
+    return `<div style="margin-bottom:16px">
+      <div style="font-weight:700;margin-bottom:6px"><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${BOT_COLORS[src]}"></span> ${esc(name)}
+        <span class="fam-meta">${num(m.opportunities)} فرصة (منها ${num(m.shadowCount || 0)} انتظار) · ${num(m.closed)} انتهت · لما دخل: فوز ${pct(m.scoutWinRate)}، متوسط ${usd(m.scoutAvgPnl)} · لما انتظر: صدق ${num((m.waitedRight || 0) + '/' + (m.waited || 0))}، متوسط الفرصة ${usd(m.waitedAvgPnl)} · تكلفة ${num('$' + fmt(m.costUSD, 3))}</span></div>
+      <div style="overflow-x:auto"><table class="mt">
+        <tr><th>الخبير</th><th>قيّم</th><th>صدق</th><th>يوافق</th></tr>
+        ${Object.entries(m.members).map(([k, x]) => `<tr><td>${ROLE_AR[k]}</td><td>${num(x.rated)}</td><td>${pct(x.accuracy)}</td><td>${pct(x.enterRate)}</td></tr>`).join('')}
+      </table></div>
+      <div style="overflow-x:auto;margin-top:8px"><table class="mt">
+        <tr><th>المدير</th><th>وافق / رفض</th><th>متوسط الموافَق عليها</th><th>متوسط المرفوضة</th><th>مرفوضة خسرت</th><th>صدق</th></tr>
+        ${chairRow('موديل', c.model)}${chairRow('كود', c.rule)}
+      </table></div>
+    </div>`;
+  }).join('');
+  const recent = (G.opportunities || []).slice(0, 8).map(o => {
+    const res = o.status === 'open' ? '<span class="tag">مفتوحة</span>' : `<span class="tag ${o.pnlUSD > 0 ? 'ok' : 'no'}">${num((o.pnlPercent >= 0 ? '+' : '') + fmt(o.pnlPercent) + '%')}</span>`;
+    const ch = (lbl, d) => d ? `<span class="tag ${d.decision === 'ENTER' ? 'ok' : 'no'}">${lbl} ${d.decision === 'ENTER' ? 'دخل' : 'رفض'}</span>` : '';
+    return `<div class="dec-row" style="grid-template-columns:52px 1fr">
+      <span class="dec-time">${clock(o.at)}</span>
+      <span class="dec-why chips"><b style="color:var(--text)">${esc(o.symbol.replace('USDT', ''))}</b><span style="color:${BOT_COLORS[o.source]}">●</span>${o.shadow ? '<span class="tag">الكشّاف انتظر</span>' : '<span class="tag ok">الكشّاف دخل</span>'}${planTxt(o.plan)}${voteChips(o.votes)}${ch('مدير موديل', o.chairModel)}${ch('مدير كود', o.chairRule)}${res}</span>
+    </div>`;
+  }).join('');
+  $('meetings').innerHTML = fam + (recent ? `<div class="form-label" style="margin-top:6px">آخر الفرص</div>${recent}` : '<div class="form-hint">ما فيه فرص للحين.</div>');
+}
+
+function actionLabel(a) {
+  if (a.startsWith('SKIP (')) return 'رفض';
+  return ({ BUY: 'شراء', SELL: 'بيع', WAIT: 'انتظار', SKIP: 'تخطّي', ERROR: 'خطأ' })[a.split(' ')[0]] + (a.includes('(') ? ' ' + a.slice(a.indexOf('(')) : '');
+}
+
+function drawRace() {
+  const canvas = $('race-canvas');
+  if (!canvas || !G) return;
+  const wrap = canvas.parentElement;
+  canvas.width = wrap.offsetWidth * devicePixelRatio;
+  canvas.height = wrap.offsetHeight * devicePixelRatio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = wrap.offsetWidth, H = wrap.offsetHeight;
+  ctx.clearRect(0, 0, W, H);
+
+  const start = G.rules.startingBalance;
+  const series = Object.values(G.bots).map(b => ({
+    id: b.def.id, name: b.def.name, referee: b.def.referee,
+    pts: [...b.balanceHistory, { time: G.serverTime, balance: b.equity }].map(p => ({ t: p.time, v: (p.balance / start - 1) * 100 })),
+  }));
+  const all = series.flatMap(s => s.pts);
+  if (all.length < 2) return;
+  const t0 = Math.min(...all.map(p => p.t)), t1 = Math.max(...all.map(p => p.t)) || t0 + 1;
+  let lo = Math.min(0, ...all.map(p => p.v)), hi = Math.max(0, ...all.map(p => p.v));
+  const pad = Math.max((hi - lo) * 0.1, 0.2); lo -= pad; hi += pad;
+  const L = 44, Rm = 8, T = 10, B = 18;
+  const x = t => L + (t - t0) / Math.max(t1 - t0, 1) * (W - L - Rm);
+  const y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+
+  ctx.direction = 'ltr';
+  ctx.font = '10px Fira Code, monospace'; ctx.fillStyle = 'rgba(120,130,155,.8)'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const v = lo + (hi - lo) * i / 4;
+    ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(L, y(v)); ctx.lineTo(W - Rm, y(v)); ctx.stroke();
+    ctx.fillText(v.toFixed(1) + '%', L - 6, y(v) + 3);
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(L, y(0)); ctx.lineTo(W - Rm, y(0)); ctx.stroke(); ctx.setLineDash([]);
+
+  for (const s of series) {
+    ctx.strokeStyle = BOT_COLORS[s.id]; ctx.lineWidth = s.referee ? 1.5 : 2.2;
+    ctx.setLineDash(s.referee ? [5, 4] : []);
+    ctx.beginPath();
+    s.pts.forEach((p, i) => i ? ctx.lineTo(x(p.t), y(p.v)) : ctx.moveTo(x(p.t), y(p.v)));
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  $('race-legend').innerHTML = series.map(s => `<span><i style="background:${BOT_COLORS[s.id]};${s.referee ? 'opacity:.7' : ''}"></i>${esc(s.name)}</span>`).join('');
+}
+
+// ── DASHBOARD (one contestant) ───────────────────────────────────────────
+function renderDashboard() {
+  const { stats, todayStats, maxDrawdown, system } = S;
+  const active = S.trades.filter(t => t.status === 'active');
+
+  $('bot-desc').innerHTML = `<strong style="color:${BOT_COLORS[S.id]}">${esc(S.def.name)}</strong>
+    ${S.def.model ? `<span class="tag" style="margin-right:6px">${esc(S.def.model)}</span>` : ''}
+    <div style="color:var(--muted);margin-top:4px">${esc(S.def.desc)}</div>
+    ${S.blocked && S.id !== 'hodl' ? `<div style="color:var(--warn);margin-top:6px">⏸ ${esc(S.blocked)}</div>` : ''}
+    ${system.lastError ? `<div style="color:var(--danger);margin-top:6px">آخر خطأ: ${esc(system.lastError)}</div>` : ''}
+    ${system.note ? `<div style="color:var(--warn);margin-top:6px">${esc(system.note)}</div>` : ''}`;
+
+  $('stat-profit').textContent  = '+$' + fmt(stats.totalProfit);
+  $('stat-loss').textContent    = '-$' + fmt(stats.totalLoss);
+  $('stat-winrate').textContent = fmt(stats.winRate, 1) + '%';
+  $('stat-active').textContent  = active.length;
+  $('stat-wins').textContent    = stats.wins + ' صفقة رابحة';
+  $('stat-losses').textContent  = stats.losses + ' صفقة خاسرة';
+  $('stat-closed').textContent  = stats.closedTrades + ' صفقة مغلقة';
+
+  const todayNet = todayStats.net;
+  const todayEl = $('stat-today-pnl');
+  todayEl.innerHTML = 'اليوم: ' + num((todayNet >= 0 ? '+' : '-') + '$' + fmt(Math.abs(todayNet)));
+  todayEl.style.color = todayNet >= 0 ? 'var(--accent)' : 'var(--danger)';
+
+  $('sys-last-ai').textContent  = system.lastAiFetch ? timeAgo(system.lastAiFetch) : 'لم يتم بعد';
+  $('sys-next-ai').textContent  = S.def.kind === 'webhook' ? 'حسب إشارات TradingView' : S.def.kind === 'hodl' ? '—' : (system.nextAiFetch ? timeUntil(system.nextAiFetch) : '—');
+  $('sys-today').textContent    = `${todayStats.wins}ر / ${todayStats.losses}خ`;
+  $('sys-drawdown').textContent = fmt(maxDrawdown) + '%';
+  $('sys-fees').textContent     = '$' + fmt(stats.feesPaid);
+  $('sys-aicost').textContent   = (S.def.kind === 'ai' || S.def.kind === 'meeting' || S.def.kind === 'always') ? '$' + fmt(stats.aiCostUSD, 3) : '—';
+
+  $('decision-list').innerHTML = S.decisions.length ? S.decisions.map(d => `
+    <div class="dec-row">
+      <span class="dec-time">${clock(d.at)}</span>
+      <span class="dec-act ${esc(d.action.split(' ')[0])}">${esc(actionLabel(d.action))}</span>
+      <span class="dec-why">${d.symbol ? `<b style="color:var(--text)">${esc(d.symbol.replace('USDT',''))}</b> ${planTxt(d.plan)} · ` : ''}${d.confidence != null ? 'ثقة ' + d.confidence + ' · ' : ''}${esc(d.reason || '')}${d.note ? ' — ' + esc(d.note) : ''}${d.votes ? '<div class="chips" style="margin-top:4px">' + voteChips(d.votes) + '</div>' : ''}</span>
+    </div>`).join('') : `<div class="empty" style="padding:20px"><p>${S.id === 'hodl' ? 'اشترِ واحتفظ ما يقرر شي. اشترى مرة وحدة ويقعد.' : 'ما فيه قرارات للحين'}</p></div>`;
+
+  drawEquityCurve();
+}
+
+// ── ACTIVE TRADES ────────────────────────────────────────────────────────
+function renderActive() {
+  const list = $('active-list');
+  const active = S.trades.filter(t => t.status === 'active');
+  renderCBBanner('cb-banner-active');
+
+  if (active.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">⚡</div><p>ما فيه صفقات مفتوحة حالياً</p></div>`;
+    return;
+  }
+
+  list.innerHTML = active.map(t => {
+    const pnlClass = t.pnlUSD >= 0 ? 'pos' : 'neg';
+    const pnlSign  = t.pnlUSD >= 0 ? '+' : '';
+    const remMin = t.maxTimeMs ? Math.max(0, Math.ceil((t.maxTimeMs - (Date.now() - t.startTime)) / 60000)) : null;
+    const fillColor = t.pnlUSD >= 0 ? 'var(--accent)' : 'var(--danger)';
+    const hasBar = t.takeProfit != null && t.stopLoss != null;
+    let bar = '';
+    if (hasBar) {
+      const range    = t.takeProfit - t.stopLoss;
+      const pos      = Math.max(0, Math.min(1, (t.currentPrice - t.stopLoss) / range));
+      const entryPos = Math.max(0, Math.min(1, (t.entryPrice - t.stopLoss) / range));
+      const posR = (1 - pos) * 100, entryR = (1 - entryPos) * 100, fillW = Math.abs(pos - entryPos) * 100;
+      bar = `<div class="progress-wrap">
+        <div class="progress-labels"><span style="color:var(--danger)">وقف ${fmtP(t.stopLoss)}</span><span style="color:var(--accent)">هدف ${fmtP(t.takeProfit)}</span></div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="right:${Math.min(entryR,posR).toFixed(1)}%;width:${fillW.toFixed(1)}%;background:${fillColor};opacity:.5"></div>
+          <div class="progress-entry-line" style="right:${entryR.toFixed(1)}%"></div>
+          <div class="progress-marker" style="right:calc(${posR.toFixed(1)}% - 5px);background:${fillColor}"></div>
+        </div></div>`;
+    }
+    const conf = t.confidence != null ? `<span class="conf MEDIUM">ثقة ${t.confidence}</span>` : '';
+    return `
+    <div class="trade-card" id="tc-${t.id}">
+      <div class="trade-header">
+        <div class="trade-symbol">${t.symbol.replace('USDT','')}<span style="color:var(--muted);font-weight:400;font-size:.7em">/USDT</span></div>
+        ${conf}
+        <div class="trade-pnl ${pnlClass}">${pnlSign}$${fmt(t.pnlUSD)}</div>
+      </div>
+      <div class="trade-rows">
+        <div class="trade-row"><span class="trl">المبلغ</span><span class="trv">$${fmt(t.amount)}</span></div>
+        <div class="trade-row"><span class="trl">سعر الدخول (بعد الانزلاق)</span><span class="trv">${fmtP(t.entryPrice)}</span></div>
+        <div class="trade-row"><span class="trl">السعر الحالي</span><span class="trv" style="color:${fillColor}">${fmtP(t.currentPrice)}</span></div>
+        ${!hasBar && t.stopLoss != null ? `<div class="trade-row"><span class="trl">وقف الخسارة</span><span class="trv" style="color:var(--danger)">${fmtP(t.stopLoss)}</span></div>` : ''}
+        <div class="trade-row"><span class="trl">الرسوم حتى الآن</span><span class="trv">$${fmt(t.feesUSD, 3)}</span></div>
+        ${remMin != null ? `<div class="trade-row"><span class="trl">الوقت المتبقي</span><span class="timer-badge">⏱ ${remMin} دقيقة</span></div>` : ''}
+        ${t.signalReason ? `<div class="trade-row"><span class="trl">السبب</span><span class="trv" style="font-family:var(--sans)">${esc(t.signalReason)}</span></div>` : ''}
+      </div>
+      ${bar}
+      <div class="sparkline-wrap"><canvas id="sp-${t.id}"></canvas></div>
+      ${S.id === 'hodl' ? '' : `<button class="btn-close-trade" onclick="closeTrade('${t.id}')">إغلاق يدوي (يُسجّل كتدخل)</button>`}
+    </div>`;
+  }).join('');
+
+  requestAnimationFrame(() => {
+    active.forEach(t => {
+      const c = document.getElementById('sp-' + t.id);
+      if (c && t.priceHistory?.length > 1) drawSparkline(c, t.priceHistory);
+    });
+  });
+}
+
+// ── HISTORY ──────────────────────────────────────────────────────────────
+function renderHistory() {
+  let trades = S.trades.filter(t => t.status !== 'active');
+  if (historyFilter === 'won')    trades = trades.filter(t => t.status === 'won');
+  if (historyFilter === 'lost')   trades = trades.filter(t => t.status === 'lost');
+  if (historyFilter === 'manual') trades = trades.filter(t => t.closeReason === 'manual-close');
+  if (historySearch) trades = trades.filter(t => t.symbol.includes(historySearch.toUpperCase()));
+
+  const list = $('history-list');
+  if (trades.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">☰</div><p>ما فيه صفقات مطابقة</p></div>`;
+    return;
+  }
+  const reasonMap = { 'take-profit': '🎯 هدف الربح', 'stop-loss': '🛑 وقف الخسارة', 'timeout': '⏰ انتهى الوقت', 'manual-close': '✋ إغلاق يدوي', 'signal-exit': '📉 إشارة بيع' };
+  list.innerHTML = trades.map(t => {
+    const pnlClass = t.pnlUSD >= 0 ? 'pos' : 'neg';
+    const holdMin = t.closeTime ? Math.round((t.closeTime - t.startTime) / 60000) : '—';
+    return `
+    <div class="trade-card ${t.status}">
+      <div class="trade-header">
+        <div class="trade-symbol">${t.symbol.replace('USDT','')}<span style="color:var(--muted);font-weight:400;font-size:.7em">/USDT</span></div>
+        <div class="trade-pnl ${pnlClass}">${t.pnlUSD >= 0 ? '+' : ''}$${fmt(t.pnlUSD)}</div>
+      </div>
+      <div class="trade-rows">
+        <div class="trade-row"><span class="trl">السبب</span><span class="trv">${reasonMap[t.closeReason] || esc(t.closeReason) || '—'}</span></div>
+        <div class="trade-row"><span class="trl">الدخول ← الخروج</span><span class="trv">${fmtP(t.entryPrice)} ← ${fmtP(t.closePrice)}</span></div>
+        <div class="trade-row"><span class="trl">الصافي بعد الرسوم</span><span class="trv" style="color:${t.pnlUSD>=0?'var(--accent)':'var(--danger)'}">${t.pnlPercent >= 0 ? '+' : ''}${fmt(t.pnlPercent)}%</span></div>
+        <div class="trade-row"><span class="trl">الرسوم</span><span class="trv">$${fmt(t.feesUSD, 3)}</span></div>
+        <div class="trade-row"><span class="trl">مدة الاحتفاظ</span><span class="trv">${holdMin} دقيقة</span></div>
+        ${t.signalReason ? `<div class="trade-row"><span class="trl">سبب الدخول</span><span class="trv" style="font-family:var(--sans)">${esc(t.signalReason)}</span></div>` : ''}
+        <div class="trade-row"><span class="trl">وقت الإغلاق</span><span class="trv">${t.closeTime ? new Date(t.closeTime).toLocaleString('ar-EG') : '—'}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── ANALYTICS ────────────────────────────────────────────────────────────
+function renderAnalytics() {
+  const { stats, weekStats } = S;
+  const closed = S.trades.filter(t => t.status !== 'active' && t.closeTime);
+  const avgHold = closed.length ? closed.reduce((s,t) => s + (t.closeTime - t.startTime), 0) / closed.length / 60000 : 0;
+
+  if (stats.bestTrade)  { $('an-best').textContent = '+$' + fmt(stats.bestTrade.pnlUSD); $('an-best-sym').textContent = stats.bestTrade.symbol; }
+  else { $('an-best').textContent = '—'; $('an-best-sym').textContent = '—'; }
+  if (stats.worstTrade) { $('an-worst').textContent = '$' + fmt(stats.worstTrade.pnlUSD); $('an-worst-sym').textContent = stats.worstTrade.symbol; }
+  else { $('an-worst').textContent = '—'; $('an-worst-sym').textContent = '—'; }
+  $('an-hold').textContent = avgHold.toFixed(1);
+
+  const weekNet = weekStats.net;
+  $('an-week').textContent = (weekNet >= 0 ? '+' : '-') + '$' + fmt(Math.abs(weekNet));
+  $('an-week').style.color = weekNet >= 0 ? 'var(--accent)' : 'var(--danger)';
+  $('an-week-sub').textContent = `${weekStats.wins}ر / ${weekStats.losses}خ`;
+
+  requestAnimationFrame(() => { drawDonut(); drawDailyBars(); });
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────
+function renderSettings() {
+  const locked = G.competition.locked;
+  document.querySelectorAll('.rule').forEach(el => {
+    el.disabled = locked;
+    if (!rulesDirty && document.activeElement !== el) el.value = G.rules[el.dataset.k];
+  });
+  $('btn-save-rules').style.display = locked ? 'none' : '';
+  $('rules-lock').textContent = locked ? '· 🔒 مقفولة' : '· مفتوحة (إحماء)';
+
+  $('comp-controls').innerHTML = locked
+    ? `<div style="font-size:.8rem;margin-bottom:12px">بدأت المسابقة الرسمية ${new Date(G.competition.startedAt).toLocaleString('ar-EG')}.</div>
+       <button class="btn-danger" onclick="resetCompetition()">إلغاء المسابقة والرجوع للإحماء</button>
+       <div class="form-hint" style="margin-top:6px">يمسح كل النتائج ويفتح القوانين. استخدمه بس إذا لازم تبدأ من جديد.</div>`
+    : `<div style="font-size:.8rem;line-height:1.7;margin-bottom:12px">قبل ما تبدأ تأكد:<br>
+       ${checkMark(G.keys.openrouter || G.mode === 'demo')} مفتاح OpenRouter (Qwen و DeepSeek والاجتماعات وأخبار Grok)<br>
+
+       ${checkMark(G.keys.webhook)} كلمة سر الويبهوك + استراتيجية "الماضي" مربوطة من TradingView<br>
+       ${checkMark(G.mode !== 'demo')} مو وضع تجربة</div>
+       <button class="btn-primary" onclick="startCompetition()">🏁 ابدأ المسابقة الرسمية</button>
+       <div class="form-hint" style="margin-top:6px">يصفّر كل المتسابقين بنفس اللحظة ويقفل القوانين.</div>`;
+
+  const row = (label, ok, hint) => `<div class="key-row"><span>${label}</span><span style="color:${ok ? 'var(--accent)' : 'var(--danger)'}">${ok ? '✓ موجود' : '✗ ناقص'}${hint ? ` <span style="color:var(--muted)">${hint}</span>` : ''}</span></div>`;
+  $('keys-status').innerHTML =
+    row('OpenRouter (القرار)', G.keys.openrouter) +
+    row('xAI (اختياري، الأخبار تشتغل من OpenRouter)', G.keys.xai || G.keys.openrouter) +
+    row('كلمة سر الويبهوك', G.keys.webhook) +
+    (G.mode === 'demo' ? '<div class="form-hint">وضع التجربة شغال: الأسعار والقرارات وهمية.</div>' : '');
+  $('webhook-url').textContent = `${location.origin}/api/webhook/strategy`;
+  $('universe-list').textContent = G.universe.map(s => s.replace('USDT', '')).join(' · ') + `  (${G.universe.length} عملة — التعديل من ملف halal-coins.json)`;
+
+  renderCBBanner('settings-cb-banner');
+}
+const checkMark = ok => ok ? '<span style="color:var(--accent)">✓</span>' : '<span style="color:var(--danger)">✗</span>';
+
+function renderCBBanner(containerId) {
+  const el = $(containerId);
+  if (!el || !S) return;
+  if (S.stats.isCircuitBreakerActive && currentView() !== 'settings') {
+    el.innerHTML = `<div class="cb-banner"><div class="cb-banner-text"><strong>⏸ ${esc(S.def.name)} موقوف مؤقتاً</strong><span>بعد ${S.stats.consecutiveLosses} خسائر متتالية. يرجع تلقائياً ${timeUntil(S.stats.pausedUntil)}.</span></div></div>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  CHARTS
+// ══════════════════════════════════════════════════════════════════════════
+function drawEquityCurve() {
+  const canvas = $('equity-canvas');
+  if (!canvas || !S?.balanceHistory?.length) return;
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.offsetWidth  * devicePixelRatio;
+  canvas.height = wrap.offsetHeight * devicePixelRatio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = wrap.offsetWidth, H = wrap.offsetHeight;
+  ctx.clearRect(0, 0, W, H);
+
+  const hist = [...S.balanceHistory, { time: Date.now(), balance: S.equity }];
+  if (hist.length < 2) {
+    // Draw flat line
+    ctx.strokeStyle = '#00d4a0'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+    return;
+  }
+
+  const vals  = hist.map(h => h.balance);
+  const min   = Math.min(...vals) * .998;
+  const max   = Math.max(...vals) * 1.002;
+  const range = max - min || 1;
+  const startBal = G.rules.startingBalance;
+  const isPos = vals[vals.length - 1] >= startBal;
+  const color = isPos ? '#00d4a0' : '#ff3d5e';
+
+  const x = i => (i / (hist.length - 1)) * W;
+  const y = v => H - ((v - min) / range) * H * .88 - H * .06;
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0,   isPos ? 'rgba(0,212,160,.25)' : 'rgba(255,61,94,.25)');
+  grad.addColorStop(.7,  isPos ? 'rgba(0,212,160,.05)' : 'rgba(255,61,94,.05)');
+  grad.addColorStop(1,   'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.moveTo(x(0), H);
+  hist.forEach((h, i) => ctx.lineTo(x(i), y(h.balance)));
+  ctx.lineTo(x(hist.length - 1), H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Start balance dashed line
+  const startY = y(startBal);
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = 'rgba(120,130,155,.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, startY); ctx.lineTo(W, startY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Main line
+  ctx.beginPath();
+  hist.forEach((h, i) => { if (i === 0) ctx.moveTo(x(i), y(h.balance)); else ctx.lineTo(x(i), y(h.balance)); });
+  ctx.strokeStyle = color; ctx.lineWidth = 2;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // End dot
+  const lx = x(hist.length - 1), ly = y(vals[vals.length - 1]);
+  ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+  ctx.fillStyle = color; ctx.fill();
+  ctx.beginPath(); ctx.arc(lx, ly, 7, 0, Math.PI * 2);
+  ctx.fillStyle = isPos ? 'rgba(0,212,160,.2)' : 'rgba(255,61,94,.2)'; ctx.fill();
+
+  $('chart-start').textContent  = '$' + fmt(vals[0]);
+  $('chart-current').textContent = '$' + fmt(vals[vals.length - 1]);
+}
+
+function drawDonut() {
+  const canvas = $('donut-canvas');
+  if (!canvas || !S) return;
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.offsetWidth  * devicePixelRatio;
+  canvas.height = wrap.offsetHeight * devicePixelRatio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = wrap.offsetWidth, H = wrap.offsetHeight;
+  ctx.clearRect(0, 0, W, H);
+
+  const wins  = S.stats.wins;
+  const total = S.stats.closedTrades || 1;
+  const wr    = wins / total;
+
+  const cx = W / 2, cy = H / 2 + 10, r = Math.min(W, H) / 2 - 20, inner = r * .6;
+  const start = -Math.PI / 2;
+
+  // BG ring
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = r - inner; ctx.stroke();
+
+  if (total > 1) {
+    // Loss arc
+    ctx.beginPath(); ctx.arc(cx, cy, (r + inner) / 2, start, start + Math.PI * 2 * (1 - wr));
+    ctx.strokeStyle = '#ff3d5e'; ctx.lineWidth = r - inner; ctx.stroke();
+    // Win arc
+    ctx.beginPath(); ctx.arc(cx, cy, (r + inner) / 2, start + Math.PI * 2 * (1 - wr), start + Math.PI * 2);
+    ctx.strokeStyle = '#00d4a0'; ctx.lineWidth = r - inner; ctx.stroke();
+  }
+
+  // Center text
+  ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.round(H * .18)}px Fira Code, monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText((wr * 100).toFixed(0) + '%', cx, cy - 4);
+  ctx.fillStyle = 'rgba(120,130,155,.8)'; ctx.font = `${Math.round(H * .09)}px Cairo, sans-serif`;
+  ctx.fillText(`${wins}ر / ${total - wins}خ`, cx, cy + H * .12);
+}
+
+function drawSparkline(canvas, history) {
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.offsetWidth  * devicePixelRatio;
+  canvas.height = wrap.offsetHeight * devicePixelRatio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = wrap.offsetWidth, H = wrap.offsetHeight;
+  ctx.clearRect(0, 0, W, H);
+  if (history.length < 2) return;
+
+  const prices = history.map(h => h.p);
+  const min = Math.min(...prices), max = Math.max(...prices);
+  const range = max - min || prices[0] * .001;
+  const x = i => (i / (history.length - 1)) * W;
+  const y = v => H - ((v - min) / range) * H * .8 - H * .1;
+  const isPos = prices[prices.length - 1] >= prices[0];
+  const color = isPos ? '#00d4a0' : '#ff3d5e';
+
+  ctx.beginPath();
+  history.forEach((h, i) => { if (i === 0) ctx.moveTo(x(i), y(h.p)); else ctx.lineTo(x(i), y(h.p)); });
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+  ctx.stroke();
+}
+
+function drawDailyBars() {
+  const canvas = $('bars-canvas');
+  if (!canvas || !S) return;
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.offsetWidth  * devicePixelRatio;
+  canvas.height = wrap.offsetHeight * devicePixelRatio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = wrap.offsetWidth, H = wrap.offsetHeight;
+  ctx.clearRect(0, 0, W, H);
+
+  // Build 7-day data
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const trades = S.trades.filter(t => t.status !== 'active' && t.closeTime && new Date(t.closeTime).toISOString().slice(0,10) === key);
+    const net = trades.reduce((s, t) => s + t.pnlUSD, 0);
+    days.push({ key, net, label: d.toLocaleDateString('ar-EG', { weekday: 'short' }) });
+  }
+
+  const nets   = days.map(d => d.net);
+  const maxAbs = Math.max(Math.max(...nets.map(Math.abs)), 1);
+  const barW   = (W - 20) / days.length - 6;
+  const midY   = H * .55;
+  const maxBarH= H * .45;
+
+  // Zero line
+  ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(10, midY); ctx.lineTo(W - 10, midY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  days.forEach((d, i) => {
+    const bx = 10 + i * ((W - 20) / days.length);
+    const bh = Math.abs(d.net / maxAbs) * maxBarH;
+    const by = d.net >= 0 ? midY - bh : midY;
+    ctx.fillStyle = d.net >= 0 ? 'rgba(0,212,160,.7)' : 'rgba(255,61,94,.7)';
+    ctx.fillRect(bx + 2, by, barW, Math.max(bh, 1));
+
+    ctx.fillStyle = 'rgba(120,130,155,.7)';
+    ctx.font = `${Math.round(H * .1)}px Cairo`;
+    ctx.textAlign = 'center';
+    ctx.fillText(d.label, bx + barW / 2 + 2, H - 4);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  API ACTIONS
+// ══════════════════════════════════════════════════════════════════════════
+document.querySelectorAll('.rule').forEach(el => el.addEventListener('input', () => { rulesDirty = true; }));
+
+async function saveRules() {
+  const data = {};
+  document.querySelectorAll('.rule').forEach(el => { data[el.dataset.k] = +el.value; });
+  const r = await api('POST', '/api/rules', data);
+  if (r.ok) { rulesDirty = false; toast('انحفظت القوانين ✓', 'ok'); }
+  else toast(r.data?.errors?.join('، ') || 'خطأ في الحفظ', 'err');
+}
+
+async function startCompetition() {
+  if (!confirm('بتبدأ المسابقة الرسمية: كل الأرقام تتصفّر والقوانين تنقفل. متأكد؟')) return;
+  const r = await api('POST', '/api/competition/start', { confirm: 'START' });
+  if (r.ok) { toast('🏁 بدأت المسابقة', 'ok'); goView('competition'); }
+  else toast(r.data?.error || 'فشل', 'err');
+}
+
+async function resetCompetition() {
+  if (!confirm('بتمسح كل نتائج المسابقة وترجع للإحماء. متأكد؟')) return;
+  if (!confirm('تأكيد أخير: النتائج تنمسح نهائياً.')) return;
+  const r = await api('POST', '/api/competition/reset', { confirm: 'RESET' });
+  if (r.ok) toast('رجعنا للإحماء', 'ok'); else toast(r.data?.error || 'فشل', 'err');
+}
+
+async function closeTrade(id) {
+  if (!confirm('الإغلاق اليدوي تدخّل في المسابقة وينحسب. متأكد؟')) return;
+  const r = await api('POST', `/api/bots/${currentBot}/trades/${id}/close`);
+  if (r.ok) toast('انسكرت الصفقة ✓', 'ok');
+  else toast(r.data?.error || 'فشل الإغلاق', 'err');
+}
+
+function exportData() {
+  window.open('/api/export', '_blank');
+  toast('جاري التنزيل...', 'info');
+}
+
+// ── HISTORY FILTERS ───────────────────────────────────────────────────────
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    historyFilter = this.dataset.filter;
+    if (S) renderHistory();
+  });
+});
+$('history-search')?.addEventListener('input', function() {
+  historySearch = this.value.trim();
+  if (S) renderHistory();
+});
+
+// ── TAB NAVIGATION ────────────────────────────────────────────────────────
+function goView(name) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  window.scrollTo({ top: 0 });
+  if (G) renderAll();
+}
+document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => goView(btn.dataset.view)));
+
+function setBadge(id, text, type) {
+  const el = $(id); if (!el) return;
+  el.textContent = text;
+  el.className = 'badge badge-' + type;
+}
+
+function toast(msg, type = 'info') {
+  const c = $('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+function timeAgo(ts) {
+  const d = Date.now() - ts;
+  if (d < 60000) return 'الآن';
+  if (d < 3600000) return 'قبل ' + Math.floor(d / 60000) + ' دقيقة';
+  if (d < 86400000) return 'قبل ' + Math.floor(d / 3600000) + ' ساعة';
+  return 'قبل ' + Math.floor(d / 86400000) + ' يوم';
+}
+
+function timeUntil(ts) {
+  const d = ts - Date.now();
+  if (d <= 0) return 'قريباً';
+  if (d < 60000) return 'بعد ' + Math.ceil(d / 1000) + ' ث';
+  if (d < 3600000) return 'بعد ' + Math.ceil(d / 60000) + ' دقيقة';
+  return 'بعد ' + Math.ceil(d / 3600000) + ' ساعة';
+}
+
+async function api(method, url, body) {
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(url, opts);
+    const data = await r.json().catch(() => ({}));
+    return { ok: r.ok, status: r.status, data };
+  } catch (e) {
+    return { ok: false, status: 0, data: { error: e.message } };
+  }
+}
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (G) renderAll(); }, 150);
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+connectWS();
+setInterval(() => {
+  if (!S) return;
+  const view = currentView();
+  if (view === 'dashboard') {
+    $('sys-last-ai').textContent = S.system.lastAiFetch ? timeAgo(S.system.lastAiFetch) : 'لم يتم بعد';
+    if (S.def.kind === 'ai' || S.def.kind === 'random' || S.def.kind === 'meeting' || S.def.kind === 'always')
+      $('sys-next-ai').textContent = S.system.nextAiFetch ? timeUntil(S.system.nextAiFetch) : '—';
+  }
+  if (view === 'active') {
+    S.trades.filter(t => t.status === 'active' && t.maxTimeMs).forEach(t => {
+      const rem = Math.max(0, Math.ceil((t.maxTimeMs - (Date.now() - t.startTime)) / 60000));
+      document.querySelectorAll(`#tc-${t.id} .timer-badge`).forEach(el => { el.textContent = `⏱ ${rem} دقيقة`; });
+    });
+  }
+}, 1000);
+</script>
+</body>
+</html>

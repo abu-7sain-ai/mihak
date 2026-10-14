@@ -1,0 +1,9 @@
+{
+  "_note": "قائمة مبدئية للمراجعة. المصدر: halalscreener.app — العملات المصنفة حلال (85/100) في فحص 12 أكتوبر 2026، إضافة إلى SEI من صفحة الإجابات بنفس التاريخ. راجعها مع مرجعك الشرعي وعدّلها قبل بدء المسابقة. العملات غير المدرجة في Binance تُستبعد تلقائياً.",
+  "source": "https://halalscreener.app/en/halal-crypto",
+  "reviewedAt": "2026-10-12",
+  "coins": [
+    "BTC", "ETH", "XRP", "BNB", "SOL", "TRX", "BCH", "ADA", "LINK", "XLM",
+    "LTC", "HBAR", "AVAX", "SUI", "TON", "DOT", "SEI", "WBT", "LEO", "CC", "CRO"
+  ]
+}
