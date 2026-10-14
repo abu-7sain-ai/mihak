@@ -14,6 +14,7 @@ const acc = require('./lib/accounting');
 const ai = require('./lib/ai');
 const { LiveMarket, MockMarket } = require('./lib/market');
 const ind = require('./lib/indicators');
+const { createMcpHandler } = require('./lib/mcp');
 
 // ── الإعداد من متغيرات البيئة (ملف .env) ─────────────────────────────────────
 const ENV = process.env;
@@ -25,6 +26,7 @@ const KEYS = {
   openrouter: ENV.OPENROUTER_API_KEY || '',
   webhook: ENV.WEBHOOK_SECRET || '',
   dashboard: ENV.DASHBOARD_PASSWORD || '',
+  mcp: ENV.MCP_SECRET || '',              // موصّل Claude: الرابط /mcp/<MCP_SECRET>
 };
 // حسابات أخبار معروفة على X (البحث فيها يتحاسب لكل تغريدة، فنحصره)
 const NEWS_X_HANDLES = (ENV.NEWS_X_HANDLES || 'WatcherGuru,whale_alert,CoinDesk,tier10k')
@@ -759,7 +761,7 @@ function scheduleCycle() {
   cycleTimer = setTimeout(async () => {
     await decisionCycle();
     scheduleCycle();
-  }, next - Date.now());
+  }, next - Date.now()).unref();
 }
 
 // ── الويبهوك: إشارات استراتيجية "الماضي" من TradingView ──────────────────────
@@ -887,6 +889,15 @@ function isAuthed(req) {
   return false;
 }
 
+// موصّل MCP لـClaude: محمي بالسر اللي في الرابط، فيمر قبل كلمة سر اللوحة
+let mcpRoute = null;
+app.all('/mcp/:secret', (req, res) => (mcpRoute ||= createMcpHandler({
+  secret: KEYS.mcp, tools: mcpTools(), version: require('./package.json').version, log,
+  instructions: 'المِحَك: مسابقة تداول ورقي (بدون فلوس حقيقية). اقرا براحتك. لا تغيّر شي إلا إذا المالك طلب، وأكّد معاه قبل بدء/تصفير المسابقة أو إغلاق صفقة.',
+}))(req, res));
+// claude.ai يدوّر OAuth هني أول؛ نقول له ما فيه عشان يكمل بدونه
+app.all('/.well-known/*', (_req, res) => res.status(404).end());
+
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/webhook/') || req.path === '/api/health') return next();
   if (isAuthed(req)) {
@@ -903,26 +914,6 @@ app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', mode: DEMO ? 'demo' : 'live', uptime: Math.round(process.uptime()) }));
 app.get('/api/state', (_req, res) => res.json(clientSnapshot()));
 
-app.post('/api/rules', async (req, res) => {
-  if (state.competition.locked)
-    return res.status(423).json({ errors: ['القوانين مقفولة لأن المسابقة بدأت. ما تتغير بالنص.'] });
-  const errs = [];
-  for (const [k, v] of Object.entries(req.body || {})) {
-    if (!(k in RULE_LIMITS)) continue;
-    const [lo, hi] = RULE_LIMITS[k];
-    if (typeof v !== 'number' || !Number.isFinite(v) || v < lo || v > hi) { errs.push(`${k}: لازم بين ${lo} و ${hi}`); continue; }
-    state.rules[k] = v;
-  }
-  if (state.rules.tradeAmount > state.rules.startingBalance) errs.push('مبلغ الصفقة أكبر من الرصيد');
-  if (state.rules.minStopPercent > state.rules.maxStopPercent) errs.push('أقرب وقف لازم يكون أصغر من أبعد وقف');
-  if (state.rules.minHoldHours > state.rules.maxHoldHours) errs.push('أقل مدة لازم تكون أصغر من أطول مدة');
-  if (errs.length) return res.status(400).json({ errors: errs });
-  scheduleCycle();
-  dirty = true;
-  await saveDb();
-  res.json({ success: true, rules: state.rules });
-});
-
 function resetAllBots() {
   const symbols = new Set(BOTS.flatMap(b => activeTrades(b.id).map(t => t.symbol)));
   state.opportunities.filter(o => o.status === 'open').forEach(o => symbols.add(o.symbol));
@@ -931,53 +922,90 @@ function resetAllBots() {
   symbols.forEach(releaseSymbol);
 }
 
-// بدء المسابقة الرسمية: يصفّر الكل بنفس اللحظة ويقفل القوانين
-app.post('/api/competition/start', async (req, res) => {
-  if (req.body?.confirm !== 'START') return res.status(400).json({ error: 'أرسل confirm: START' });
-  resetAllBots();
-  state.competition = { startedAt: Date.now(), locked: true };
-  state.news = { text: null, at: null, searches: 0, error: null };
-  await ensureHodl();
-  dirty = true;
-  await saveDb();
-  log.ok('🏁 بدأت المسابقة الرسمية — القوانين مقفولة');
-  res.json({ success: true, startedAt: state.competition.startedAt });
-});
+// ── الأفعال (تستخدمها اللوحة وموصّل MCP) — كلها ترجع { status, body } ──────
+const actions = {
+  async setRules(input) {
+    if (state.competition.locked)
+      return { status: 423, body: { errors: ['القوانين مقفولة لأن المسابقة بدأت. ما تتغير بالنص.'] } };
+    const errs = [];
+    for (const [k, v] of Object.entries(input || {})) {
+      if (!(k in RULE_LIMITS)) continue;
+      const [lo, hi] = RULE_LIMITS[k];
+      if (typeof v !== 'number' || !Number.isFinite(v) || v < lo || v > hi) { errs.push(`${k}: لازم بين ${lo} و ${hi}`); continue; }
+      state.rules[k] = v;
+    }
+    if (state.rules.tradeAmount > state.rules.startingBalance) errs.push('مبلغ الصفقة أكبر من الرصيد');
+    if (state.rules.minStopPercent > state.rules.maxStopPercent) errs.push('أقرب وقف لازم يكون أصغر من أبعد وقف');
+    if (state.rules.minHoldHours > state.rules.maxHoldHours) errs.push('أقل مدة لازم تكون أصغر من أطول مدة');
+    if (errs.length) return { status: 400, body: { errors: errs } };
+    scheduleCycle();
+    dirty = true;
+    await saveDb();
+    return { status: 200, body: { success: true, rules: state.rules } };
+  },
 
-// إنهاء/إلغاء المسابقة: يفتح القوانين ويصفّر الكل (وضع الإحماء)
-app.post('/api/competition/reset', async (req, res) => {
-  if (req.body?.confirm !== 'RESET') return res.status(400).json({ error: 'أرسل confirm: RESET' });
-  resetAllBots();
-  state.competition = { startedAt: null, locked: false };
-  await ensureHodl();
-  dirty = true;
-  await saveDb();
-  res.json({ success: true });
-});
+  // بدء المسابقة الرسمية: يصفّر الكل بنفس اللحظة ويقفل القوانين
+  async startCompetition(confirm) {
+    if (confirm !== 'START') return { status: 400, body: { error: 'أرسل confirm: START' } };
+    resetAllBots();
+    state.competition = { startedAt: Date.now(), locked: true };
+    state.news = { text: null, at: null, searches: 0, error: null };
+    await ensureHodl();
+    dirty = true;
+    await saveDb();
+    log.ok('🏁 بدأت المسابقة الرسمية — القوانين مقفولة');
+    return { status: 200, body: { success: true, startedAt: state.competition.startedAt } };
+  },
 
-app.post('/api/bots/:bot/trades/:id/close', async (req, res) => {
-  const bot = state.bots[req.params.bot];
-  if (!bot) return res.status(404).json({ error: 'المتسابق مو موجود' });
-  if (req.params.bot === 'hodl') return res.status(400).json({ error: 'اشترِ واحتفظ ما يبيع' });
-  const t = bot.trades.find(x => x.id === req.params.id);
-  if (!t) return res.status(404).json({ error: 'الصفقة مو موجودة' });
-  if (t.status !== 'active') return res.status(400).json({ error: 'الصفقة مسكرة' });
-  try {
-    const price = await market.price(t.symbol);
-    closeTrade(t, 'manual-close', price);
-    res.json({ success: true });
-  } catch (e) {
-    res.status(503).json({ error: e.message });
-  }
-});
+  // إنهاء/إلغاء المسابقة: يفتح القوانين ويصفّر الكل (وضع الإحماء)
+  async resetCompetition(confirm) {
+    if (confirm !== 'RESET') return { status: 400, body: { error: 'أرسل confirm: RESET' } };
+    resetAllBots();
+    state.competition = { startedAt: null, locked: false };
+    await ensureHodl();
+    dirty = true;
+    await saveDb();
+    return { status: 200, body: { success: true } };
+  },
 
-app.post('/api/bots/:bot/resume', (req, res) => {
-  const bot = state.bots[req.params.bot];
-  if (!bot) return res.status(404).json({ error: 'المتسابق مو موجود' });
-  bot.cb = { consecutiveLosses: 0, pausedUntil: null };
-  dirty = true;
-  res.json({ success: true });
-});
+  async closeTrade(botId, tradeId) {
+    const bot = state.bots[botId];
+    if (!bot) return { status: 404, body: { error: 'المتسابق مو موجود' } };
+    if (botId === 'hodl') return { status: 400, body: { error: 'اشترِ واحتفظ ما يبيع' } };
+    const t = bot.trades.find(x => x.id === tradeId);
+    if (!t) return { status: 404, body: { error: 'الصفقة مو موجودة' } };
+    if (t.status !== 'active') return { status: 400, body: { error: 'الصفقة مسكرة' } };
+    try {
+      const price = await market.price(t.symbol);
+      closeTrade(t, 'manual-close', price);
+      return { status: 200, body: { success: true } };
+    } catch (e) {
+      return { status: 503, body: { error: e.message } };
+    }
+  },
+
+  resumeBot(botId) {
+    const bot = state.bots[botId];
+    if (!bot) return { status: 404, body: { error: 'المتسابق مو موجود' } };
+    bot.cb = { consecutiveLosses: 0, pausedUntil: null };
+    dirty = true;
+    return { status: 200, body: { success: true } };
+  },
+
+  async refreshNews() {
+    if (!DEMO && !KEYS.xai && !KEYS.openrouter) return { status: 400, body: { error: 'ما فيه مفتاح للأخبار' } };
+    await refreshNews(true);
+    dirty = true;
+    return { status: 200, body: { success: !state.news.error, error: state.news.error } };
+  },
+};
+const send = (res, out) => res.status(out.status).json(out.body);
+
+app.post('/api/rules', async (req, res) => send(res, await actions.setRules(req.body)));
+app.post('/api/competition/start', async (req, res) => send(res, await actions.startCompetition(req.body?.confirm)));
+app.post('/api/competition/reset', async (req, res) => send(res, await actions.resetCompetition(req.body?.confirm)));
+app.post('/api/bots/:bot/trades/:id/close', async (req, res) => send(res, await actions.closeTrade(req.params.bot, req.params.id)));
+app.post('/api/bots/:bot/resume', (req, res) => send(res, actions.resumeBot(req.params.bot)));
 
 // وضع التجربة فقط: تشغيل جولة قرار فوراً
 app.post('/api/demo/cycle', async (_req, res) => {
@@ -986,12 +1014,7 @@ app.post('/api/demo/cycle', async (_req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/news/refresh', async (_req, res) => {
-  if (!DEMO && !KEYS.xai && !KEYS.openrouter) return res.status(400).json({ error: 'ما فيه مفتاح للأخبار' });
-  await refreshNews(true);
-  dirty = true;
-  res.json({ success: !state.news.error, error: state.news.error });
-});
+app.post('/api/news/refresh', async (_req, res) => send(res, await actions.refreshNews()));
 
 app.get('/api/export', (_req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="ghost-trader-${dayKey(Date.now())}.json"`);
@@ -1010,6 +1033,116 @@ app.post('/api/webhook/strategy', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+// ── أدوات MCP ────────────────────────────────────────────────────────────────
+function mcpTools() {
+  const botIds = BOTS.map(b => b.id);
+  const botArg = { type: 'string', enum: botIds, description: 'رقم المتسابق' };
+  const RO = { readOnlyHint: true, openWorldHint: false };
+  const limitArg = { type: 'integer', minimum: 1, maximum: 500, description: 'كم واحد (افتراضي 50)' };
+  const obj = (properties = {}, required = []) => ({ type: 'object', properties, required, additionalProperties: false });
+  const result = out => (out.status >= 400 ? { error: out.body.error || out.body.errors, status: out.status } : out.body);
+  const lim = n => Math.min(Math.max(Number(n) || 50, 1), 500);
+  const iso = t => (t ? new Date(t).toISOString() : null);
+
+  return [
+    { name: 'get_overview', annotations: { title: 'نظرة عامة', ...RO },
+      description: "Competition status, leaderboard (return, drawdown, win rate, fees, AI cost, beats random/hodl), keys present, next decision time, news status, and each bot's blocked/paused state, last decision and last error.",
+      inputSchema: obj(),
+      run: () => {
+        const snap = clientSnapshot();
+        return {
+          mode: snap.mode, competition: snap.competition, keys: snap.keys, models: snap.models,
+          serverTime: iso(snap.serverTime), nextDecisionAt: iso(snap.nextDecisionAt),
+          news: { at: iso(state.news.at), error: state.news.error, searches: state.news.searches },
+          universe: snap.universe,
+          leaderboard: snap.leaderboard,
+          bots: Object.fromEntries(Object.entries(snap.bots).map(([id, b]) => [id, {
+            name: b.def.name, balance: b.balance, equity: b.equity, openTrades: b.trades.filter(t => t.status === 'active').length,
+            blocked: b.blocked, paused: b.cb, lastRun: b.system.lastRun, lastError: b.system.lastError, lastDecision: b.decisions[0] || null,
+          }])),
+        };
+      } },
+
+    { name: 'get_bot', annotations: { title: 'تفاصيل متسابق', ...RO },
+      description: 'Full detail of one contestant: definition, stats, open and recent closed trades, last 40 decisions with reasons, balance history.',
+      inputSchema: obj({ bot_id: botArg }, ['bot_id']),
+      run: ({ bot_id }) => (BOT[bot_id] ? botSnapshot(bot_id) : { error: 'المتسابق مو موجود' }) },
+
+    { name: 'get_trades', annotations: { title: 'الصفقات', ...RO },
+      description: 'Paper trades, newest first. Filter by bot and status (active / closed / all).',
+      inputSchema: obj({ bot_id: botArg, status: { type: 'string', enum: ['active', 'closed', 'all'] }, limit: limitArg }),
+      run: ({ bot_id, status = 'all', limit }) => {
+        if (bot_id && !BOT[bot_id]) return { error: 'المتسابق مو موجود' };
+        let all = (bot_id ? [bot_id] : botIds).flatMap(id => state.bots[id].trades.map(t => ({ bot: id, ...t })));
+        if (status === 'active') all = all.filter(t => t.status === 'active');
+        if (status === 'closed') all = all.filter(t => t.status !== 'active');
+        all.sort((a, b) => (b.startTime || 0) - (a.startTime || 0));
+        return { total: all.length, trades: all.slice(0, lim(limit)) };
+      } },
+
+    { name: 'get_opportunities', annotations: { title: 'الفرص', ...RO },
+      description: "Every candidate a scout found (including WAIT ones, shadow=true) with its plan, expert votes, both chairs' decisions and hypothetical outcome. Newest first.",
+      inputSchema: obj({
+        source: { type: 'string', enum: BOTS.filter(b => b.kind === 'ai').map(b => b.id) },
+        symbol: { type: 'string', description: 'مثل BTCUSDT' },
+        status: { type: 'string', enum: ['open', 'won', 'lost'] },
+        limit: limitArg,
+      }),
+      run: ({ source, symbol, status, limit }) => {
+        let list = state.opportunities;
+        if (source) list = list.filter(o => o.source === source);
+        if (symbol) list = list.filter(o => o.symbol === String(symbol).toUpperCase());
+        if (status) list = list.filter(o => o.status === status);
+        return { total: list.length, opportunities: list.slice(0, lim(limit)) };
+      } },
+
+    { name: 'get_meetings', annotations: { title: 'الاجتماعات: هل تضيف قيمة؟', ...RO },
+      description: "Per scout: how often each expert (trend/news/risk) and each chair (model/rule) was right, how the scout's WAITs turned out, and meeting cost.",
+      inputSchema: obj(),
+      run: () => Object.fromEntries(BOTS.filter(b => b.kind === 'ai').map(b => [b.id, meetingStats(b.id)])) },
+
+    { name: 'get_rules', annotations: { title: 'القوانين', ...RO },
+      description: 'Current rules, the allowed range of each, and whether they are locked (locked once the official competition starts).',
+      inputSchema: obj(),
+      run: () => ({ locked: state.competition.locked, rules: state.rules, limits: RULE_LIMITS }) },
+
+    { name: 'get_news', annotations: { title: 'الأخبار', ...RO },
+      description: 'The latest news summary the scouts are reading, and when it was fetched.',
+      inputSchema: obj(),
+      run: () => ({ ...state.news, at: iso(state.news.at) }) },
+
+    { name: 'set_rules', annotations: { title: 'تعديل القوانين', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      description: 'Change one or more rules (numbers only, each within its range from get_rules). Refused while the competition is locked. Only when the owner asks.',
+      inputSchema: obj({ rules: { type: 'object', description: 'مثل {"minConfidence": 60}', additionalProperties: { type: 'number' } } }, ['rules']),
+      run: async ({ rules }) => result(await actions.setRules(rules)) },
+
+    { name: 'resume_bot', annotations: { title: 'تشغيل متسابق موقوف', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      description: "Clear a contestant's loss-streak pause so it trades again next round.",
+      inputSchema: obj({ bot_id: botArg }, ['bot_id']),
+      run: ({ bot_id }) => result(actions.resumeBot(bot_id)) },
+
+    { name: 'refresh_news', annotations: { title: 'تحديث الأخبار', readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+      description: 'Fetch fresh news now (costs a little AI money).',
+      inputSchema: obj(),
+      run: async () => result(await actions.refreshNews()) },
+
+    { name: 'close_trade', annotations: { title: 'إغلاق صفقة', readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      description: 'Close one open paper trade at the current price. Confirm with the owner first.',
+      inputSchema: obj({ bot_id: botArg, trade_id: { type: 'string' } }, ['bot_id', 'trade_id']),
+      run: async ({ bot_id, trade_id }) => result(await actions.closeTrade(bot_id, trade_id)) },
+
+    { name: 'start_competition', annotations: { title: 'بدء المسابقة الرسمية', readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      description: 'Start the official 8-week competition: wipes every contestant to a fresh balance and locks the rules. Ask the owner first; pass confirm="START".',
+      inputSchema: obj({ confirm: { type: 'string', const: 'START' } }, ['confirm']),
+      run: async ({ confirm }) => result(await actions.startCompetition(confirm)) },
+
+    { name: 'reset_competition', annotations: { title: 'تصفير المسابقة', readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      description: 'End/cancel the competition: wipes every contestant and unlocks the rules (back to warm-up). Ask the owner first; pass confirm="RESET".',
+      inputSchema: obj({ confirm: { type: 'string', const: 'RESET' } }, ['confirm']),
+      run: async ({ confirm }) => result(await actions.resetCompetition(confirm)) },
+  ];
+}
 
 // ── WebSocket للوحة ──────────────────────────────────────────────────────────
 const wss = new WebSocket.Server({
@@ -1068,6 +1201,7 @@ async function main() {
     if (!KEYS.webhook) log.warn('WEBHOOK_SECRET مو موجود — "الماضي" ما يقدر يستقبل إشارات');
   }
   if (!KEYS.dashboard) log.warn('DASHBOARD_PASSWORD مو موجود — اللوحة مفتوحة لأي أحد يوصل للرابط');
+  log.info(KEYS.mcp ? 'موصّل Claude (MCP) شغّال على /mcp/<MCP_SECRET>' : 'MCP_SECRET مو موجود — موصّل Claude طافي');
 
   // نرجع نتابع الصفقات المفتوحة
   for (const b of BOTS) activeTrades(b.id).forEach(t => market.subscribe(t.symbol));
