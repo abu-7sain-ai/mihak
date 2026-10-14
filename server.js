@@ -15,6 +15,7 @@ const ai = require('./lib/ai');
 const { LiveMarket, MockMarket } = require('./lib/market');
 const ind = require('./lib/indicators');
 const { createMcpHandler } = require('./lib/mcp');
+const strategies = require('./lib/strategies');
 
 // ── الإعداد من متغيرات البيئة (ملف .env) ─────────────────────────────────────
 const ENV = process.env;
@@ -127,6 +128,8 @@ const BOTS = [
     desc: 'نفس فرص Fable ونفس أصوات الخبراء، والقرار بقاعدة ثابتة بالكود.' },
   { id: 'now-fable-always', name: 'Fable · يدخل دائماً', kind: 'always', source: 'now-fable', team: 'now', family: 'fable', model: MODELS.fable,
     desc: 'نفس كشّاف Fable، لكن يدخل أقوى فرصة سمّاها في كل جولة حتى لو Fable قال انتظر.' },
+  { id: 'code-breakout-btc', name: 'الكود · بريك أوت + فلتر البتكوين', kind: 'code', strategy: 'breakout-btc-4h', team: 'code',
+    desc: 'استراتيجية بالكود بدون ذكاء اصطناعي، نجحت في الاختبار التاريخي (2022–2024) والفحص المستقل (2025→2026): كسر أعلى 20 شمعة (4 ساعات) والاتجاه صاعد فوق EMA200 والبتكوين فوق متوسط 200 يوم. وقف 2.5 ATR، ووقف ملاحق 3 ATR على الإغلاق. التفاصيل في strategy-research.md.' },
   { id: 'past-strategy', name: 'الماضي · استراتيجية', kind: 'webhook', team: 'past',
     desc: 'استراتيجية مختبرة على سنين في TradingView، ترسل إشاراتها هنا.' },
   { id: 'random', name: 'العشوائي', kind: 'random', referee: true,
@@ -260,7 +263,7 @@ function blockReason(id) {
 }
 
 // ── فتح وإغلاق الصفقات ──────────────────────────────────────────────────────
-async function enterTrade(id, { symbol, confidence = null, reason = null, tpPercent, slPercent, maxMinutes, round = null }) {
+async function enterTrade(id, { symbol, confidence = null, reason = null, tpPercent, slPercent, maxMinutes, round = null, extra = null }) {
   const bot = state.bots[id];
   const r = R();
   if (activeTrades(id).some(t => t.symbol === symbol)) return { error: `فيه صفقة مفتوحة على ${symbol}` };
@@ -301,6 +304,7 @@ async function enterTrade(id, { symbol, confidence = null, reason = null, tpPerc
     confidence,
     signalReason: reason,
     round,              // الجولة اللي انفتحت فيها (للمقارنة العادلة)
+    ...(extra || {}),   // متسابقين الكود: الوقف الملاحق وأعلى سعر من الدخول
     priceHistory: [{ t: Date.now(), p: price }],
   };
   const live = acc.tradePnl(trade, price, r);
@@ -836,7 +840,7 @@ function fairComparison() {
   const scouts = Object.fromEntries(BOTS.filter(b => b.kind === 'ai').map(b => [b.id, meetingStats(b.id, o => rounds.has(o.round))]));
   const bots = {};
   for (const b of BOTS) {
-    if (b.kind === 'hodl' || b.kind === 'webhook') continue;
+    if (b.kind === 'hodl' || b.kind === 'webhook' || b.kind === 'code') continue;
     const t = state.bots[b.id].trades.filter(x => rounds.has(x.round));
     const closed = t.filter(x => x.status !== 'active');
     const won = closed.filter(x => x.pnlUSD > 0);
@@ -848,6 +852,95 @@ function fairComparison() {
     };
   }
   return { roundsCompared: rounds.size, note: 'الجولات اللي رد فيها Fable بس', scouts, bots };
+}
+
+// ── متسابقين الكود: استراتيجيات lib/strategies.js على الشموع المغلقة ────────
+// نفس الكود اللي انختبر في research/backtest.js. كل شمعة تنعالج مرة وحدة بس.
+const CODE_FRESH_MS = { '4h': 3_600_000, '1d': 4 * 3_600_000 };   // بعد إعادة التشغيل: ندخل بس إذا الشمعة سكّرت قريب
+let codeRunning = false;
+
+async function runCodeBots(now = Date.now()) {
+  if (codeRunning) return;
+  codeRunning = true;
+  try {
+    for (const def of BOTS.filter(b => b.kind === 'code')) {
+      try { await runCodeBot(def, now); }
+      catch (e) { state.bots[def.id].system.lastError = e.message; log.err(`[${def.id}] ${e.message}`); }
+    }
+  } finally { codeRunning = false; }
+}
+
+async function runCodeBot(def, now) {
+  const strat = strategies.byId[def.strategy];
+  const tfMs = strategies.TF_MS[strat.tf];
+  const bot = state.bots[def.id];
+  bot.codeState ??= { lastCandle: {} };
+  const seen = bot.codeState.lastCandle;
+  // نشتغل بس إذا فيه شمعة جديدة سكّرت
+  const lastClosedStart = Math.floor(now / tfMs) * tfMs - tfMs;
+  if (universe.every(sym => (seen[sym] ?? -1) >= lastClosedStart)) return;
+
+  const btc1d = strat.uses?.includes('btc1d') ? await market.klines('BTCUSDT', '1d', 1000) : null;
+  const exits = [], signals = [], notes = [];
+  for (const sym of universe) {
+    let candles;
+    try { candles = (await market.klines(sym, strat.tf, 1000)).filter(c => c.t + tfMs <= now); }
+    catch (e) { notes.push(`${sym}: ${e.message}`); continue; }
+    if (candles.length < 250) continue;
+    const i = candles.length - 1, c = candles[i];
+    if ((seen[sym] ?? -1) >= c.t) continue;
+    seen[sym] = c.t;
+    const d1 = strat.uses?.includes('d1') ? await market.klines(sym, '1d', 1000) : null;
+    const S = strat.prepare(candles, { btc1d, d1 });
+    const trade = activeTrades(def.id).find(t => t.symbol === sym);
+
+    if (trade) {
+      const pos = { stop: trade.stopLoss, trail: trade.trail ?? undefined, highestHigh: Math.max(trade.highestHigh ?? 0, c.high) };
+      trade.highestHigh = pos.highestHigh;
+      const out = strat.exit(S, i, pos);
+      if (pos.trail != null) trade.trail = pos.trail;
+      if (out) { exits.push({ trade, sym }); continue; }
+      const t = strat.trail(S, i, pos);
+      if (t != null && Number.isFinite(t) && t > trade.stopLoss) trade.stopLoss = t;
+      continue;
+    }
+    // إشارة دخول: بس إذا الشمعة سكّرت قريب (بعد إعادة تشغيل طويلة ما ندخل على إشارة قديمة)
+    if (now - (c.t + tfMs) > CODE_FRESH_MS[strat.tf]) continue;
+    if (!strat.entry(S, i)) continue;
+    const vol = candles.slice(-Math.round(20 * strategies.DAY / tfMs)).reduce((s, x) => s + (x.quoteVolume || 0), 0);
+    signals.push({ sym, stop: strat.initialStop(S, i), close: c.close, vol });
+  }
+
+  for (const { trade, sym } of exits) {
+    const price = await market.price(sym).catch(() => trade.currentPrice);
+    closeTrade(trade, 'signal-exit', price);
+  }
+  // لما الخانات ما تكفي: الأعلى تداولاً آخر 20 يوم أول
+  const entered = [];
+  for (const s of signals.sort((a, b) => b.vol - a.vol)) {
+    let price;
+    try { price = await market.price(s.sym); } catch (e) { notes.push(`${s.sym}: ${e.message}`); continue; }
+    const slPercent = s.stop != null ? (s.stop / price - 1) * 100 : -99;
+    if (slPercent >= 0) { notes.push(`${s.sym}: السعر نزل تحت الوقف قبل الدخول`); continue; }
+    const res = await enterTrade(def.id, {
+      symbol: s.sym, reason: `إشارة ${strat.nameAr}`, tpPercent: null, slPercent, maxMinutes: null,
+      extra: { strategy: strat.id, trail: undefined, highestHigh: price },
+    });
+    if (res.error) notes.push(`${s.sym}: ${res.error}`); else entered.push(s.sym);
+  }
+  bot.system.lastRun = now;
+  bot.system.lastError = null;
+  const parts = [];
+  if (entered.length) parts.push(`دخل: ${entered.join('، ')}`);
+  if (exits.length) parts.push(`خرج: ${exits.map(x => x.sym).join('، ')}`);
+  if (notes.length) parts.push(notes.join(' | '));
+  recordDecision(def.id, {
+    action: entered.length ? 'BUY' : exits.length ? 'SELL' : 'WAIT',
+    symbol: entered[0] || exits[0]?.sym || null,
+    reason: parts.join(' · ') || 'ما فيه إشارة على الشمعة المغلقة',
+  });
+  dirty = true;
+  saveDb();
 }
 
 async function runRandomBot(round = null) {
@@ -1386,6 +1479,8 @@ async function main() {
   setInterval(snapshotEquity, 5 * 60_000);
   setInterval(() => { if (dirty) saveDb(); }, 30_000);
   setInterval(loadUniverse, 6 * 3_600_000);
+  setInterval(() => runCodeBots().catch(e => log.err(`الكود: ${e.message}`)), 60_000);  // متسابقين الكود: كل دقيقة نشوف إذا سكّرت شمعة جديدة
+  setTimeout(() => runCodeBots().catch(e => log.err(`الكود: ${e.message}`)), 15_000);
 
   scheduleCycle();
   setTimeout(decisionCycle, 5_000); // أول جولة بعد 5 ثواني
@@ -1404,4 +1499,4 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 function start() { server.listen(PORT, main); }
 if (require.main === module) start();
 
-module.exports = { start, app, server, _internals: { openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; } } };
+module.exports = { start, app, server, _internals: { runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };

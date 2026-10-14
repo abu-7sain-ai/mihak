@@ -10,3 +10,5 @@ runner/*.log
 runner/*.log.old
 runner/work/
 runner/.fable-runner.lock
+research/data/
+research/out/
