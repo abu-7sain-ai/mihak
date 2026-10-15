@@ -54,7 +54,7 @@ test('initialize, notifications and tools/list follow MCP', async () => {
 test('read tools return data', async () => {
   const o = await call('get_overview');
   assert.strictEqual(o.isError, false);
-  assert.strictEqual(o.data.leaderboard.length, 16);
+  assert.strictEqual(o.data.leaderboard.length, 17);
   assert.strictEqual(o.data.fable.rounds, 0);
   const r = await call('get_rules');
   assert.strictEqual(r.data.locked, false);

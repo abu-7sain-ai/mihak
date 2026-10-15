@@ -45,7 +45,7 @@ test('indicator series match the existing ema()', () => {
 });
 
 // سوق وهمي: شموع 4 ساعات تطلع بثبات وآخر شمعة تكسر القمة؛ البتكوين فوق متوسط 200 يوم
-function fakeMarket(now, { breakout = true, crash = false } = {}) {
+function fakeMarket(now, { breakout = true, crash = false, btcDown = false } = {}) {
   const lastStart = Math.floor(now / H4) * H4 - H4;
   const c4 = Array.from({ length: 1000 }, (_, k) => {
     const i = k - 999, p = 100 * 1.002 ** (k);
@@ -55,7 +55,7 @@ function fakeMarket(now, { breakout = true, crash = false } = {}) {
   if (breakout) { last.close = last.high * 1.05; last.high = last.close; }
   if (crash) { last.close = last.open * 0.5; last.low = last.close; }
   const lastDay = Math.floor(now / DAY) * DAY - DAY;
-  const d1 = Array.from({ length: 1000 }, (_, k) => ({ t: lastDay + (k - 999) * DAY, open: 1, high: 1, low: 1, close: 100 * 1.001 ** k, quoteVolume: 1 }));
+  const d1 = Array.from({ length: 1000 }, (_, k) => ({ t: lastDay + (k - 999) * DAY, open: 1, high: 1, low: 1, close: 100 * (btcDown ? 0.999 : 1.001) ** k, quoteVolume: 1 }));
   return {
     subscribe() {}, unsubscribe() {},
     price: async () => last.close,
@@ -96,3 +96,44 @@ test('after a long restart it does not enter on an old candle', async () => {
   await S.runCodeBots(now);
   assert.strictEqual(bot.trades.length, before);
 });
+
+// code-breakout-nobtc = code-breakout-btc بدون فلتر البتكوين: على نفس الشموع يدخل كل ما دخل ذاك، وزيادة لما البتكوين تحت SMA200
+test('no-BTC breakout signals whenever the BTC one does, and also when BTC is below its daily SMA200', () => {
+  const withBtc = st.byId['breakout-btc-4h'], noBtc = st.byId[S.BOT['code-breakout-nobtc'].strategy];
+  assert.strictEqual(S.BOT['code-breakout-nobtc'].kind, 'code');
+  assert.strictEqual(noBtc.tf, withBtc.tf);
+  for (const k of ['initialStop', 'exit', 'trail']) assert.strictEqual(noBtc[k], withBtc[k], `same ${k}`);
+  const c4 = walk(2500, H4, 7), btc = walk(1400, DAY, 11, 0.003);
+  const A = withBtc.prepare(c4, { btc1d: btc }), B = noBtc.prepare(c4, {});
+  let both = 0, onlyNoBtcBtcDown = 0;
+  for (let i = 250; i < c4.length; i++) {
+    const a = withBtc.entry(A, i), b = noBtc.entry(B, i);
+    if (a) { assert.ok(b, `bar ${i}: the BTC one signals, the no-BTC one must too`); both++; }
+    if (b && !a) {
+      assert.strictEqual(A.btcUp[i] === true, false, `bar ${i}: a difference may come only from the BTC filter`);
+      if (A.btcUp[i] === false) onlyNoBtcBtcDown++;
+    }
+    if (b && A.btcUp[i] === true) assert.ok(a, `bar ${i}: BTC above its SMA200 -> identical`);
+    if (ok_(A.cl[i])) assert.strictEqual(noBtc.initialStop(B, i), withBtc.initialStop(A, i));
+  }
+  assert.ok(both > 0, 'both signal somewhere');
+  assert.ok(onlyNoBtcBtcDown > 0, 'and the no-BTC one also signals while BTC is below its daily SMA200');
+});
+
+test('live: with BTC below its daily SMA200 only code-breakout-nobtc enters, with the same stop rule', async () => {
+  const now = Math.floor(Date.now() / H4) * H4 + 120_000;
+  S.setUniverse(['SOLUSDT']);
+  S.setMarket(fakeMarket(now, { btcDown: true }));
+  const nb = S.state().bots['code-breakout-nobtc'], wb = S.state().bots['code-breakout-btc'];
+  nb.trades = []; nb.codeState = { lastCandle: {} }; nb.cb = { consecutiveLosses: 0, pausedUntil: null };  // (the crash test above hit its daily loss limit)
+  const before = wb.trades.length;
+  await S.runCodeBots(now);
+  const t = nb.trades.find(x => x.status === 'active' && x.symbol === 'SOLUSDT');
+  assert.ok(t, 'the no-BTC contestant should enter');
+  assert.strictEqual(wb.trades.length, before, 'the BTC-filtered one stays out');
+  assert.ok(t.stopLoss < t.entryPrice && t.takeProfit == null && t.maxTimeMs == null);
+  await S.runCodeBots(now + 60_000);
+  assert.strictEqual(nb.trades.filter(x => x.symbol === 'SOLUSDT').length, 1, 'once per candle');
+});
+
+function ok_(x) { return x != null && Number.isFinite(x); }

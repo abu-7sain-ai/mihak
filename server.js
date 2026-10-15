@@ -130,6 +130,9 @@ const BOTS = [
     desc: 'نفس كشّاف Fable، لكن يدخل أقوى فرصة سمّاها في كل جولة حتى لو Fable قال انتظر.' },
   { id: 'code-breakout-btc', name: 'الكود · بريك أوت + فلتر البتكوين', kind: 'code', strategy: 'breakout-btc-4h', team: 'code',
     desc: 'استراتيجية بالكود بدون ذكاء اصطناعي، نجحت في الاختبار التاريخي (2022–2024) والفحص المستقل (2025→2026): كسر أعلى 20 شمعة (4 ساعات) والاتجاه صاعد فوق EMA200 والبتكوين فوق متوسط 200 يوم. وقف 2.5 ATR، ووقف ملاحق 3 ATR على الإغلاق. التفاصيل في strategy-research.md.' },
+  // نفس code-breakout-btc بالضبط (نفس breakoutCore: الدخول والوقف والوقف الملاحق والخروج، 4 ساعات) بس بدون فلتر البتكوين
+  { id: 'code-breakout-nobtc', name: 'الكود · بريك أوت بدون بتكوين', kind: 'code', strategy: 'base-breakout', team: 'code',
+    desc: 'نفس «الكود · بريك أوت + فلتر البتكوين» بالضبط بس بدون فلتر البتكوين: كسر أعلى 20 شمعة (4 ساعات) والاتجاه صاعد فوق EMA200. وقف 2.5 ATR، ووقف ملاحق 3 ATR على الإغلاق. للمقارنة: وش يضيف فلتر البتكوين؟' },
   { id: 'past-strategy', name: 'الماضي · استراتيجية', kind: 'webhook', team: 'past',
     desc: 'استراتيجية مختبرة على سنين في TradingView، ترسل إشاراتها هنا.' },
   { id: 'random', name: 'العشوائي', kind: 'random', referee: true,
@@ -1508,4 +1511,4 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 function start() { server.listen(PORT, main); }
 if (require.main === module) start();
 
-module.exports = { start, app, server, _internals: { runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };
+module.exports = { start, app, server, _internals: { BOT, runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };
