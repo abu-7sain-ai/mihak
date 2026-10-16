@@ -16,6 +16,26 @@ const { LiveMarket, MockMarket } = require('./lib/market');
 const ind = require('./lib/indicators');
 const { createMcpHandler } = require('./lib/mcp');
 const strategies = require('./lib/strategies');
+const strategySpec = require('./lib/strategy-spec');
+
+// ── استراتيجيات كتبتها النماذج: strategies/<id>.json (مجمّدة، ما تتعدل) ──────
+const SPEC_IDS = [['strat-fable', 'استراتيجية Fable'], ['strat-gpt', 'استراتيجية GPT'], ['strat-qwen', 'استراتيجية Qwen'], ['strat-deepseek', 'استراتيجية DeepSeek']];
+const SPEC_STRATS = {};
+const SPEC_INFO = {};
+for (const [id] of SPEC_IDS) {
+  try {
+    const j = JSON.parse(fs.readFileSync(path.join(__dirname, 'strategies', `${id}.json`), 'utf-8'));
+    SPEC_INFO[id] = j;
+    if (j.valid) SPEC_STRATS[id] = { ...strategySpec.compile(j.spec, id), nameAr: j.name };
+  } catch (e) { SPEC_INFO[id] = { valid: false, errors: [e.message] }; }
+}
+function specDesc(id) {
+  const j = SPEC_INFO[id];
+  if (!j?.valid) return 'النموذج ما سلّم استراتيجية صالحة، فهذا المتسابق ما يتداول.';
+  return `${j.idea}
+يخسر لما: ${j.loses}
+كتبها: ${j.modelUsed}`;
+}
 
 // ── الإعداد من متغيرات البيئة (ملف .env) ─────────────────────────────────────
 const ENV = process.env;
@@ -133,6 +153,7 @@ const BOTS = [
   // نفس code-breakout-btc بالضبط (نفس breakoutCore: الدخول والوقف والوقف الملاحق والخروج، 4 ساعات) بس بدون فلتر البتكوين
   { id: 'code-breakout-nobtc', name: 'الكود · بريك أوت بدون بتكوين', kind: 'code', strategy: 'base-breakout', team: 'code',
     desc: 'نفس «الكود · بريك أوت + فلتر البتكوين» بالضبط بس بدون فلتر البتكوين: كسر أعلى 20 شمعة (4 ساعات) والاتجاه صاعد فوق EMA200. وقف 2.5 ATR، ووقف ملاحق 3 ATR على الإغلاق. للمقارنة: وش يضيف فلتر البتكوين؟' },
+  ...SPEC_IDS.map(([id, name]) => ({ id, name, kind: 'code', strategy: id, spec: true, team: 'code', desc: specDesc(id) })),
   { id: 'past-strategy', name: 'الماضي · استراتيجية', kind: 'webhook', team: 'past',
     desc: 'استراتيجية مختبرة على سنين في TradingView، ترسل إشاراتها هنا.' },
   { id: 'random', name: 'العشوائي', kind: 'random', referee: true,
@@ -883,7 +904,8 @@ async function runCodeBots(now = Date.now()) {
 }
 
 async function runCodeBot(def, now) {
-  const strat = strategies.byId[def.strategy];
+  const strat = strategies.byId[def.strategy] || SPEC_STRATS[def.strategy];
+  if (!strat) { state.bots[def.id].system.note = 'النموذج ما سلّم استراتيجية صالحة'; return; }
   const tfMs = strategies.TF_MS[strat.tf];
   const bot = state.bots[def.id];
   bot.codeState ??= { lastCandle: {} };
@@ -935,7 +957,8 @@ async function runCodeBot(def, now) {
     const slPercent = s.stop != null ? (s.stop / price - 1) * 100 : -99;
     if (slPercent >= 0) { notes.push(`${s.sym}: السعر نزل تحت الوقف قبل الدخول`); continue; }
     const res = await enterTrade(def.id, {
-      symbol: s.sym, reason: `إشارة ${strat.nameAr}`, tpPercent: null, slPercent, maxMinutes: null,
+      symbol: s.sym, reason: `إشارة ${strat.nameAr}`, tpPercent: null, slPercent,
+      maxMinutes: strat.maxHoldBars ? strat.maxHoldBars * tfMs / 60_000 : null,   // أطول مدة (إذا الاستراتيجية حددتها)
       extra: { strategy: strat.id, trail: undefined, highestHigh: price },
     });
     if (res.error) notes.push(`${s.sym}: ${res.error}`); else entered.push(s.sym);

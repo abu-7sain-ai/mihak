@@ -10,12 +10,26 @@
 const fs = require('fs');
 const path = require('path');
 const acc = require('../lib/accounting');
-const { STRATEGIES, byId, TF_MS, DAY } = require('../lib/strategies');
+const { STRATEGIES, byId: codeById, TF_MS, DAY } = require('../lib/strategies');
+const { compile } = require('../lib/strategy-spec');
+
+// الاستراتيجيات اللي كتبتها النماذج (strategies/*.json، مجمّدة)
+const SPEC_DIR = path.join(__dirname, '..', 'strategies');
+const byId = { ...codeById };
+if (fs.existsSync(SPEC_DIR)) for (const f of fs.readdirSync(SPEC_DIR).filter(f => f.endsWith('.json'))) {
+  const j = JSON.parse(fs.readFileSync(path.join(SPEC_DIR, f), 'utf-8'));
+  if (j.valid) byId[j.id] = { ...compile(j.spec, j.id), name: `${j.name} (${j.modelUsed})` };
+}
 
 const COINS = ['BTC', 'ETH', 'XRP', 'BNB', 'SOL', 'TRX', 'BCH', 'ADA', 'LINK', 'XLM', 'LTC', 'HBAR', 'AVAX', 'SUI', 'DOT', 'SEI'].map(c => `${c}USDT`);
 const RULES = { feePercent: 0.1, slippagePercent: 0.05 };
 const AMOUNT = 100;
-const LIVE = { slots: 3, balance: 1000, dailyLossUSD: 50, lossStreak: 4, cooldownMs: 6 * 3_600_000 };
+let LIVE = { slots: 3, balance: 1000, dailyLossUSD: 50, lossStreak: 4, cooldownMs: 6 * 3_600_000 };
+// قوانين السيرفر الحالية (state.rules من get_rules)
+function useLiveRules(r) {
+  LIVE = { slots: r.maxConcurrentTrades, balance: r.startingBalance, dailyLossUSD: r.startingBalance * r.dailyLossLimitPercent / 100,
+    lossStreak: r.consecutiveLossLimit, cooldownMs: r.cooldownHours * 3_600_000 };
+}
 const PERIODS = {
   dev: [Date.UTC(2022, 0, 1), Date.UTC(2025, 0, 1)],
   oos: [Date.UTC(2025, 0, 1), Infinity],
@@ -57,7 +71,7 @@ function makeRunner(strat, sym, period) {
       if (!allowed) { R.skipped++; return; }
       const c = candles[i];
       const { fill, qty } = acc.openPosition(AMOUNT, c.open, RULES);
-      R.pos = { t: c.t, amount: AMOUNT, qty, entryPrice: fill, stop: R.pendingStop, highestHigh: c.high, highestClose: c.open };
+      R.pos = { t: c.t, idx: i, amount: AMOUNT, qty, entryPrice: fill, stop: R.pendingStop, highestHigh: c.high, highestClose: c.open };
     },
     // داخل الشمعة: الوقف
     stopCheck(i) {
@@ -76,7 +90,7 @@ function makeRunner(strat, sym, period) {
         p.highestHigh = Math.max(p.highestHigh, c.high);
         p.highestClose = Math.max(p.highestClose, c.close);
         if (i === lastIdx) R.close(c.close, 'period-end', c.t);
-        else if (strat.exit(S, i, p)) R.pending = 'exit';
+        else if (strat.exit(S, i, p) || (strat.maxHoldBars && i - p.idx + 1 >= strat.maxHoldBars)) R.pending = 'exit';
         else {
           const t = strat.trail(S, i, p);
           if (t != null && Number.isFinite(t) && (p.stop == null || t > p.stop)) p.stop = t;
@@ -106,17 +120,18 @@ function buyHold(sym, tf, period) {
   return acc.tradePnl(pos, acc.exitFill('period-end', c.at(-1).close, pos, RULES), RULES).pnl;
 }
 
-function maxDrawdown(curves) {
+function maxDrawdown(curves, base = 0) {
   const days = [...new Set(curves.flatMap(m => [...m.keys()]))].sort((a, b) => a - b);
   const last = curves.map(() => 0);
-  let peak = 0, dd = 0;
+  let peak = 0, dd = 0, ddPct = 0;
   for (const d of days) {
     let v = 0;
     curves.forEach((m, k) => { if (m.has(d)) last[k] = m.get(d); v += last[k]; });
     peak = Math.max(peak, v);
     dd = Math.max(dd, peak - v);
+    if (base) ddPct = Math.max(ddPct, (peak - v) / (base + peak) * 100);
   }
-  return dd;
+  return base ? { dd, ddPct } : dd;
 }
 
 // ── اختبار لكل عملة لحالها (للشروط) ──────────────────────────────────────────
@@ -215,6 +230,12 @@ function summarize(strat, runners, period) {
     beatsBH: coins.filter(c => c.pnl > c.bh).length,
     topCoin: top.sym, topShare: total > 0 ? top.pnl / total * 100 : null,
     maxDD: maxDrawdown(runners.map(R => R.equity)),
+    maxDDPct: maxDrawdown(runners.map(R => R.equity), LIVE.balance).ddPct,
+    profitFactor: (() => {
+      const all = runners.flatMap(R => R.trades);
+      const w = all.filter(x => x.pnl > 0).reduce((s, x) => s + x.pnl, 0), l = -all.filter(x => x.pnl <= 0).reduce((s, x) => s + x.pnl, 0);
+      return l > 0 ? w / l : null;
+    })(),
     skipped: coins.reduce((s, c) => s + c.skipped, 0),
     coins,
   };
@@ -233,13 +254,14 @@ function verdict(r) {
 if (require.main === module) {
   const arg = k => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : null; };
   const periodName = arg('period') || 'dev';
+  if (arg('rules')) useLiveRules(JSON.parse(fs.readFileSync(arg('rules'), 'utf-8')));
   const only = arg('only') ? arg('only').split(',') : null;
   if (periodName !== 'dev' && !only) { console.error('oos/full تحتاج --only (الفحص على 2025 مرة وحدة بس، للقائمة القصيرة)'); process.exit(1); }
   const list = only ? only.map(id => byId[id] || (() => { throw new Error(`unknown ${id}`); })()) : STRATEGIES.filter(s => !s.baseline);
   const period = PERIODS[periodName];
   const out = list.map(s => {
     const a = perCoin(s, period), b = portfolio(s, period);
-    return { ...a, fails: verdict(a), live: { total: b.total, trades: b.trades, maxDD: b.maxDD, skipped: b.skipped, winRate: b.winRate } };
+    return { ...a, fails: verdict(a), live: { slots: LIVE.slots, total: b.total, returnPct: b.total / LIVE.balance * 100, trades: b.trades, maxDD: b.maxDD, maxDDPct: b.maxDDPct, profitFactor: b.profitFactor, skipped: b.skipped, winRate: b.winRate } };
   });
   const dir = path.join(__dirname, 'out');
   fs.mkdirSync(dir, { recursive: true });
@@ -254,4 +276,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { perCoin, portfolio, verdict, makeRunner, PERIODS, COINS };
+module.exports = { perCoin, portfolio, verdict, makeRunner, useLiveRules, byId, PERIODS, COINS };

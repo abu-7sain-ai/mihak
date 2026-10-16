@@ -1,0 +1,83 @@
+{
+  "id": "strat-qwen",
+  "name": "استراتيجية Qwen",
+  "frozen": true,
+  "generatedAt": "2026-10-16T07:14:51.464Z",
+  "modelRequested": "qwen/qwen3.8-max-prime",
+  "modelUsed": "qwen/qwen3.8-max-prime",
+  "valid": true,
+  "errors": [],
+  "idea": "تستفيد من زخم العملات القوية عندما يكون البيتكوين فوق متوسطه الطويل.\nتدخل فقط عند تقاطع MACD إيجابي مع إغلاق السعر فوق متوسط 200 شمعة.\nالإيقاف والتتبع يحدّان الخسائر ويتركان الربح يمتد.\nالفلترة العامة تقلل التداول في فترات الهبوط الحاد.\nالمنطق بسيط وغير منحني، فيُرجّح أن يبقى فعالًا عبر دورات السوق.",
+  "loses": "الأسواق الجانبية كثيرة التقلبات قد تولد إشارات كاذبة متكررة.\nهبوط مفاجئ في البيتكوين أو العملات بعد الدخول قد يفعّل الإيقاف بسرعة.",
+  "spec": {
+    "name": "BTC-Up MACD Trend",
+    "timeframe": "4h",
+    "entry": [
+      {
+        "filter": "btcUp"
+      },
+      {
+        "left": {
+          "ind": "macdLine"
+        },
+        "op": "crossAbove",
+        "right": {
+          "ind": "macdSignal"
+        }
+      },
+      {
+        "left": {
+          "ind": "close"
+        },
+        "op": ">",
+        "right": {
+          "ind": "sma",
+          "len": 200
+        }
+      }
+    ],
+    "exit": {
+      "stopAtr": 2,
+      "trailAtr": 3,
+      "conditions": [],
+      "maxHoldBars": 90
+    }
+  },
+  "costUSD": 0.100032,
+  "notionalUSD": null,
+  "promptSha256": "1f1e01ede563afbd329a0e5b441bc6b32e9e3a2796abf6f067cd04dd9319646e",
+  "attempts": [
+    {
+      "model": "qwen/qwen3.8-max-prime",
+      "modelUsed": "qwen/qwen3.8-max-prime",
+      "costUSD": 0.100032,
+      "notionalUSD": null,
+      "usage": {
+        "prompt_tokens": 1356,
+        "completion_tokens": 7884,
+        "total_tokens": 9240,
+        "cost": 0.100032,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.100032,
+          "upstream_inference_prompt_cost": 0.005424,
+          "upstream_inference_completions_cost": 0.094608
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 7550,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "### IDEA\nتستفيد من زخم العملات القوية عندما يكون البيتكوين فوق متوسطه الطويل.\nتدخل فقط عند تقاطع MACD إيجابي مع إغلاق السعر فوق متوسط 200 شمعة.\nالإيقاف والتتبع يحدّان الخسائر ويتركان الربح يمتد.\nالفلترة العامة تقلل التداول في فترات الهبوط الحاد.\nالمنطق بسيط وغير منحني، فيُرجّح أن يبقى فعالًا عبر دورات السوق.\n### SPEC\n```json\n{\n  \"name\": \"BTC-Up MACD Trend\",\n  \"timeframe\": \"4h\",\n  \"entry\": [\n    { \"filter\": \"btcUp\" },\n    { \"left\": { \"ind\": \"macdLine\" }, \"op\": \"crossAbove\", \"right\": { \"ind\": \"macdSignal\" } },\n    { \"left\": { \"ind\": \"close\" }, \"op\": \">\", \"right\": { \"ind\": \"sma\", \"len\": 200 } }\n  ],\n  \"exit\": {\n    \"stopAtr\": 2,\n    \"trailAtr\": 3,\n    \"conditions\": [],\n    \"maxHoldBars\": 90\n  }\n}\n```\n### LOSES\nالأسواق الجانبية كثيرة التقلبات قد تولد إشارات كاذبة متكررة.\nهبوط مفاجئ في البيتكوين أو العملات بعد الدخول قد يفعّل الإيقاف بسرعة.",
+      "valid": true,
+      "errors": []
+    }
+  ]
+}

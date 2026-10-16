@@ -1,0 +1,97 @@
+{
+  "id": "strat-gpt",
+  "name": "استراتيجية GPT",
+  "frozen": true,
+  "generatedAt": "2026-10-16T07:14:23.302Z",
+  "modelRequested": "openai/gpt-6.1-sol-pro",
+  "modelUsed": "openai/gpt-6.1-sol-pro",
+  "valid": true,
+  "errors": [],
+  "idea": "تلتقط الاستراتيجية عودة الزخم بعد تراجع داخل اتجاه صاعد محلي.\nالبقاء فوق متوسط طويل يرشّح الشراء مع الاتجاه لا ضده.\nعبور القوة النسبية لمنتصف نطاقها يحدد توقيت استئناف الزخم.\nحد أدنى للتذبذب يستبعد الحركات الضيقة مقارنة بتكاليف التداول.\nوقف متكيف وآخر متحرك يضبطان المخاطرة ويتركان للأرباح مساحة.",
+  "loses": "تخسر في الأسواق العرضية المتذبذبة بسبب تكرار إشارات استئناف زائفة وتراكم التكاليف.\nالارتدادات القصيرة داخل هبوط قوي والانعكاسات المفاجئة قد تضرب الوقف قبل امتداد الربح.",
+  "spec": {
+    "name": "Trend Reclaim with Volatility Floor",
+    "timeframe": "4h",
+    "entry": [
+      {
+        "left": {
+          "ind": "close"
+        },
+        "op": ">",
+        "right": {
+          "ind": "ema",
+          "len": 100
+        }
+      },
+      {
+        "left": {
+          "ind": "rsi",
+          "len": 14
+        },
+        "op": "crossAbove",
+        "right": 50
+      },
+      {
+        "left": {
+          "ind": "atrPct"
+        },
+        "op": ">",
+        "right": 1
+      }
+    ],
+    "exit": {
+      "stopAtr": 2,
+      "trailAtr": 3,
+      "conditions": [
+        {
+          "left": {
+            "ind": "close"
+          },
+          "op": "<",
+          "right": {
+            "ind": "ema",
+            "len": 100
+          }
+        }
+      ],
+      "maxHoldBars": null
+    }
+  },
+  "costUSD": 0.0560849,
+  "notionalUSD": null,
+  "promptSha256": "1f1e01ede563afbd329a0e5b441bc6b32e9e3a2796abf6f067cd04dd9319646e",
+  "attempts": [
+    {
+      "model": "openai/gpt-6.1-sol-pro",
+      "modelUsed": "openai/gpt-6.1-sol-pro",
+      "costUSD": 0.0560849,
+      "notionalUSD": null,
+      "usage": {
+        "prompt_tokens": 8371,
+        "completion_tokens": 4164,
+        "total_tokens": 12535,
+        "cost": 0.0560849,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 1209,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0560849,
+          "upstream_inference_prompt_cost": 0.0144449,
+          "upstream_inference_completions_cost": 0.04164
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3329,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "### IDEA\nتلتقط الاستراتيجية عودة الزخم بعد تراجع داخل اتجاه صاعد محلي.\nالبقاء فوق متوسط طويل يرشّح الشراء مع الاتجاه لا ضده.\nعبور القوة النسبية لمنتصف نطاقها يحدد توقيت استئناف الزخم.\nحد أدنى للتذبذب يستبعد الحركات الضيقة مقارنة بتكاليف التداول.\nوقف متكيف وآخر متحرك يضبطان المخاطرة ويتركان للأرباح مساحة.\n### SPEC\n```json\n{\n  \"name\": \"Trend Reclaim with Volatility Floor\",\n  \"timeframe\": \"4h\",\n  \"entry\": [\n    {\n      \"left\": { \"ind\": \"close\" },\n      \"op\": \">\",\n      \"right\": { \"ind\": \"ema\", \"len\": 100 }\n    },\n    {\n      \"left\": { \"ind\": \"rsi\", \"len\": 14 },\n      \"op\": \"crossAbove\",\n      \"right\": 50\n    },\n    {\n      \"left\": { \"ind\": \"atrPct\" },\n      \"op\": \">\",\n      \"right\": 1\n    }\n  ],\n  \"exit\": {\n    \"stopAtr\": 2,\n    \"trailAtr\": 3,\n    \"conditions\": [\n      {\n        \"left\": { \"ind\": \"close\" },\n        \"op\": \"<\",\n        \"right\": { \"ind\": \"ema\", \"len\": 100 }\n      }\n    ],\n    \"maxHoldBars\": null\n  }\n}\n```\n### LOSES\nتخسر في الأسواق العرضية المتذبذبة بسبب تكرار إشارات استئناف زائفة وتراكم التكاليف.\nالارتدادات القصيرة داخل هبوط قوي والانعكاسات المفاجئة قد تضرب الوقف قبل امتداد الربح.",
+      "valid": true,
+      "errors": []
+    }
+  ]
+}

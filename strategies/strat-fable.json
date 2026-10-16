@@ -1,0 +1,106 @@
+{
+  "id": "strat-fable",
+  "name": "استراتيجية Fable",
+  "frozen": true,
+  "generatedAt": "2026-10-16T07:13:45.182Z",
+  "modelRequested": "claude-fable-5-1",
+  "modelUsed": "claude-fable-5-1",
+  "valid": true,
+  "errors": [],
+  "idea": "- الاستراتيجية تستغل استمرار الزخم (Momentum continuation): اختراق أعلى سعر خلال 20 شمعة 4 ساعات يشير إلى دخول مشترين جدد وبداية حركة اتجاهية.\n- فلتر الاتجاه (الإغلاق فوق EMA 100 + بيتكوين فوق متوسطه لـ200 يوم) يمنع الشراء في الأسواق الهابطة، لأن العملات البديلة تتبع بيتكوين بقوة.\n- الوقف الأولي 2×ATR يحدّ الخسارة في كل صفقة، والوقف المتحرك 3×ATR يترك الأرباح تنمو في الاتجاهات القوية ويخرج تلقائياً عند الانعكاس.\n- الخروج عند كسر EMA 100 أو بعد 60 شمعة يمنع التجمد في صفقات ميتة ويحرر رأس المال.\n- اختراقات دونشيان الكلاسيكية تعمل منذ عقود في الأسواق الاتجاهية، والعملات الرقمية تتميز بترندات طويلة وقوية مما يحافظ على فعاليتها عبر الزمن.",
+  "loses": "- الأسواق العرضية المتذبذبة: الاختراقات الكاذبة المتكررة تؤدي إلى سلسلة خسائر صغيرة متتالية (0.3% تكلفة + وقف ATR).\n- الانعكاسات الحادة والمفاجئة بعد الاختراق (ضخ وتفريغ سريع) تضرب الوقف قبل أن يتحرك الوقف المتحرك.\n- فترات التقلب المنخفض جداً تجعل الوقف 2×ATR ضيقاً فيُضرب بسهولة من الضوضاء اليومية.",
+  "spec": {
+    "name": "Donchian Trend Breakout with BTC Filter",
+    "timeframe": "4h",
+    "entry": [
+      {
+        "filter": "btcUp"
+      },
+      {
+        "left": {
+          "ind": "close"
+        },
+        "op": ">",
+        "right": {
+          "ind": "donchianHigh",
+          "len": 20
+        }
+      },
+      {
+        "left": {
+          "ind": "close"
+        },
+        "op": ">",
+        "right": {
+          "ind": "ema",
+          "len": 100
+        }
+      }
+    ],
+    "exit": {
+      "stopAtr": 2,
+      "trailAtr": 3,
+      "conditions": [
+        {
+          "left": {
+            "ind": "close"
+          },
+          "op": "<",
+          "right": {
+            "ind": "ema",
+            "len": 100
+          }
+        }
+      ],
+      "maxHoldBars": 60
+    }
+  },
+  "costUSD": 0,
+  "notionalUSD": 0.12491000000000001,
+  "promptSha256": "1f1e01ede563afbd329a0e5b441bc6b32e9e3a2796abf6f067cd04dd9319646e",
+  "attempts": [
+    {
+      "model": "claude-fable-5-1",
+      "modelUsed": "claude-fable-5-1",
+      "costUSD": 0,
+      "notionalUSD": 0.12491000000000001,
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 2567,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 1471,
+        "output_tokens_details": {
+          "thinking_tokens": 555
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 2567,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1471,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 2567,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 2567
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "raw": "### IDEA\n- الاستراتيجية تستغل استمرار الزخم (Momentum continuation): اختراق أعلى سعر خلال 20 شمعة 4 ساعات يشير إلى دخول مشترين جدد وبداية حركة اتجاهية.\n- فلتر الاتجاه (الإغلاق فوق EMA 100 + بيتكوين فوق متوسطه لـ200 يوم) يمنع الشراء في الأسواق الهابطة، لأن العملات البديلة تتبع بيتكوين بقوة.\n- الوقف الأولي 2×ATR يحدّ الخسارة في كل صفقة، والوقف المتحرك 3×ATR يترك الأرباح تنمو في الاتجاهات القوية ويخرج تلقائياً عند الانعكاس.\n- الخروج عند كسر EMA 100 أو بعد 60 شمعة يمنع التجمد في صفقات ميتة ويحرر رأس المال.\n- اختراقات دونشيان الكلاسيكية تعمل منذ عقود في الأسواق الاتجاهية، والعملات الرقمية تتميز بترندات طويلة وقوية مما يحافظ على فعاليتها عبر الزمن.\n### SPEC\n```json\n{\n  \"name\": \"Donchian Trend Breakout with BTC Filter\",\n  \"timeframe\": \"4h\",\n  \"entry\": [\n    { \"filter\": \"btcUp\" },\n    { \"left\": { \"ind\": \"close\" }, \"op\": \">\", \"right\": { \"ind\": \"donchianHigh\", \"len\": 20 } },\n    { \"left\": { \"ind\": \"close\" }, \"op\": \">\", \"right\": { \"ind\": \"ema\", \"len\": 100 } }\n  ],\n  \"exit\": {\n    \"stopAtr\": 2,\n    \"trailAtr\": 3,\n    \"conditions\": [\n      { \"left\": { \"ind\": \"close\" }, \"op\": \"<\", \"right\": { \"ind\": \"ema\", \"len\": 100 } }\n    ],\n    \"maxHoldBars\": 60\n  }\n}\n```\n### LOSES\n- الأسواق العرضية المتذبذبة: الاختراقات الكاذبة المتكررة تؤدي إلى سلسلة خسائر صغيرة متتالية (0.3% تكلفة + وقف ATR).\n- الانعكاسات الحادة والمفاجئة بعد الاختراق (ضخ وتفريغ سريع) تضرب الوقف قبل أن يتحرك الوقف المتحرك.\n- فترات التقلب المنخفض جداً تجعل الوقف 2×ATR ضيقاً فيُضرب بسهولة من الضوضاء اليومية.",
+      "valid": true,
+      "errors": []
+    }
+  ]
+}

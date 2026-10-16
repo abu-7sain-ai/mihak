@@ -803,7 +803,8 @@ const BOT_COLORS = {
   'now-qwen': '#00d4a0', 'now-qwen-chair': '#7ff0d0', 'now-qwen-rule': '#0a8f6c', 'now-qwen-always': '#c6f26b',
   'now-deepseek': '#3d8ef8', 'now-deepseek-chair': '#9cc3ff', 'now-deepseek-rule': '#1f56c9', 'now-deepseek-always': '#ff7eb6',
   'now-fable': '#ff6b4a', 'now-fable-chair': '#ffb199', 'now-fable-rule': '#c23b1c', 'now-fable-always': '#ffd24a',
-  'code-breakout-btc': '#e8e8e8', 'code-breakout-nobtc': '#9aa3ad',
+  'code-breakout-btc': '#e8e8e8',
+  'strat-fable': '#ff8f6b', 'strat-gpt': '#10a37f', 'strat-qwen': '#6c5ce7', 'strat-deepseek': '#4d6bfe', 'code-breakout-nobtc': '#9aa3ad',
   'past-strategy': '#f5a623', 'random': '#b48cff', 'hodl': '#7a8499',
 };
 const ROLE_AR = { trend: 'الاتجاه', news: 'الأخبار', risk: 'المخاطر' };
@@ -1069,7 +1070,7 @@ function renderDashboard() {
 
   $('bot-desc').innerHTML = `<strong style="color:${BOT_COLORS[S.id]}">${esc(S.def.name)}</strong>
     ${S.def.model ? `<span class="tag" style="margin-right:6px">${esc(S.def.model)}</span>` : ''}
-    <div style="color:var(--muted);margin-top:4px">${esc(S.def.desc)}</div>
+    <div style="color:var(--muted);margin-top:4px;white-space:pre-line">${esc(S.def.desc)}</div>
     ${S.blocked && S.id !== 'hodl' ? `<div style="color:var(--warn);margin-top:6px">⏸ ${esc(S.blocked)}</div>` : ''}
     ${system.lastError ? `<div style="color:var(--danger);margin-top:6px">آخر خطأ: ${esc(system.lastError)}</div>` : ''}
     ${system.note ? `<div style="color:var(--warn);margin-top:6px">${esc(system.note)}</div>` : ''}`;

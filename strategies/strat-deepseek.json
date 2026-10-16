@@ -1,0 +1,104 @@
+{
+  "id": "strat-deepseek",
+  "name": "استراتيجية DeepSeek",
+  "frozen": true,
+  "generatedAt": "2026-10-16T07:15:30.820Z",
+  "modelRequested": "~deepseek/deepseek-pro-latest",
+  "modelUsed": "deepseek/deepseek-v4-pro-0813",
+  "valid": true,
+  "errors": [],
+  "idea": "يستغل الاتجاه عندما يكون البيتكوين فوق متوسط 200 يوم، ويشتري العملات التي تؤكد الزخم الإيجابي على فريم 4 ساعات.\nيعتمد على تقاطع MACD الإيجابي مع سعر فوق متوسط 200 شمعة وحجم تداول فوق متوسطه لتجنب الإشارات الضعيفة.\nيستخدم وقف خسارة ووقفا متحركا مرتبطين بـ ATR حتى يحد من الخسائر ويحمي الأرباح دون تحديد هدف سعري.\nبساطة الشروط والأرقام المستديرة تجعله صلبا عبر 16 عملة وفي أسواق صاعدة وعرضية وهبوطية.\nيحد من التداول في الهبوط العام عبر شرط البيتكوين فوق متوسط 200 يوم، مع خروج عند كسر متوسط 200 شمعة للعملة.",
+  "loses": "يخسر في التذبذب الجانبي عندما يتقاطع MACD إيجابيا ثم ينعكس السعر بسرعة قبل أن يتحول الاتجاه.\nيخسر عندما يكون البيتكوين إيجابيا لكن بعض العملات البديلة تصحح أو تتحرك دون استمرار رغم تأكيد الحجم.\nيخسر في القفزات الحادة المعاكسة التي تتجاوز الوقف المتحرك قبل أن يؤمن الربح.",
+  "spec": {
+    "name": "BTC-Filtered 4h MACD Volume Trend",
+    "timeframe": "4h",
+    "entry": [
+      {
+        "filter": "btcUp"
+      },
+      {
+        "left": {
+          "ind": "close"
+        },
+        "op": ">",
+        "right": {
+          "ind": "sma",
+          "len": 200
+        }
+      },
+      {
+        "left": {
+          "ind": "macdLine"
+        },
+        "op": "crossAbove",
+        "right": {
+          "ind": "macdSignal"
+        }
+      },
+      {
+        "left": {
+          "ind": "volume"
+        },
+        "op": ">",
+        "right": {
+          "ind": "volSma",
+          "len": 20
+        }
+      }
+    ],
+    "exit": {
+      "stopAtr": 2,
+      "trailAtr": 3,
+      "conditions": [
+        {
+          "left": {
+            "ind": "close"
+          },
+          "op": "<",
+          "right": {
+            "ind": "sma",
+            "len": 200
+          }
+        }
+      ],
+      "maxHoldBars": 60
+    }
+  },
+  "costUSD": 0.0153620467,
+  "notionalUSD": null,
+  "promptSha256": "1f1e01ede563afbd329a0e5b441bc6b32e9e3a2796abf6f067cd04dd9319646e",
+  "attempts": [
+    {
+      "model": "~deepseek/deepseek-pro-latest",
+      "modelUsed": "deepseek/deepseek-v4-pro-0813",
+      "costUSD": 0.0153620467,
+      "notionalUSD": null,
+      "usage": {
+        "prompt_tokens": 1331,
+        "completion_tokens": 14313,
+        "total_tokens": 15644,
+        "cost": 0.0153620467,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0153620467,
+          "upstream_inference_prompt_cost": 0.0011921767,
+          "upstream_inference_completions_cost": 0.01416987
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 13765,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "### IDEA\nيستغل الاتجاه عندما يكون البيتكوين فوق متوسط 200 يوم، ويشتري العملات التي تؤكد الزخم الإيجابي على فريم 4 ساعات.\nيعتمد على تقاطع MACD الإيجابي مع سعر فوق متوسط 200 شمعة وحجم تداول فوق متوسطه لتجنب الإشارات الضعيفة.\nيستخدم وقف خسارة ووقفا متحركا مرتبطين بـ ATR حتى يحد من الخسائر ويحمي الأرباح دون تحديد هدف سعري.\nبساطة الشروط والأرقام المستديرة تجعله صلبا عبر 16 عملة وفي أسواق صاعدة وعرضية وهبوطية.\nيحد من التداول في الهبوط العام عبر شرط البيتكوين فوق متوسط 200 يوم، مع خروج عند كسر متوسط 200 شمعة للعملة.\n\n### SPEC\n```json\n{\n  \"name\": \"BTC-Filtered 4h MACD Volume Trend\",\n  \"timeframe\": \"4h\",\n  \"entry\": [\n    { \"filter\": \"btcUp\" },\n    { \"left\": { \"ind\": \"close\" }, \"op\": \">\", \"right\": { \"ind\": \"sma\", \"len\": 200 } },\n    { \"left\": { \"ind\": \"macdLine\" }, \"op\": \"crossAbove\", \"right\": { \"ind\": \"macdSignal\" } },\n    { \"left\": { \"ind\": \"volume\" }, \"op\": \">\", \"right\": { \"ind\": \"volSma\", \"len\": 20 } }\n  ],\n  \"exit\": {\n    \"stopAtr\": 2,\n    \"trailAtr\": 3,\n    \"conditions\": [\n      { \"left\": { \"ind\": \"close\" }, \"op\": \"<\", \"right\": { \"ind\": \"sma\", \"len\": 200 } }\n    ],\n    \"maxHoldBars\": 60\n  }\n}\n```\n\n### LOSES\nيخسر في التذبذب الجانبي عندما يتقاطع MACD إيجابيا ثم ينعكس السعر بسرعة قبل أن يتحول الاتجاه.\nيخسر عندما يكون البيتكوين إيجابيا لكن بعض العملات البديلة تصحح أو تتحرك دون استمرار رغم تأكيد الحجم.\nيخسر في القفزات الحادة المعاكسة التي تتجاوز الوقف المتحرك قبل أن يؤمن الربح.",
+      "valid": true,
+      "errors": []
+    }
+  ]
+}
