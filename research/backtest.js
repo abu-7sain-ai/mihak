@@ -15,7 +15,7 @@ const { compile } = require('../lib/strategy-spec');
 
 // الاستراتيجيات اللي كتبتها النماذج (strategies/*.json، مجمّدة)
 const SPEC_DIR = path.join(__dirname, '..', 'strategies');
-const byId = { ...codeById };
+const byId = { ...codeById, 'fable-discovery': require('../lib/fable-discovery') };   // اكتشاف Fable (مجمّد)
 if (fs.existsSync(SPEC_DIR)) for (const f of fs.readdirSync(SPEC_DIR).filter(f => f.endsWith('.json'))) {
   const j = JSON.parse(fs.readFileSync(path.join(SPEC_DIR, f), 'utf-8'));
   if (j.valid) byId[j.id] = { ...compile(j.spec, j.id), name: `${j.name} (${j.modelUsed})` };
@@ -43,7 +43,7 @@ const load = (sym, tf) => (cache[`${sym}_${tf}`] ??= JSON.parse(fs.readFileSync(
 // ── مشغّل عملة وحدة: نفس الخطوات للاختبار لكل عملة وللمحفظة بقوانين المِحَك ──
 function makeRunner(strat, sym, period) {
   const candles = load(sym, strat.tf);
-  const ctx = { d1: load(sym, '1d'), btc1d: load('BTCUSDT', '1d') };
+  const ctx = { d1: load(sym, '1d'), btc1d: load('BTCUSDT', '1d'), btc4h: load('BTCUSDT', '4h') };
   const S = strat.prepare(candles, ctx);
   const [from, to] = period;
   const idx = [];

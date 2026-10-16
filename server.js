@@ -17,6 +17,7 @@ const ind = require('./lib/indicators');
 const { createMcpHandler } = require('./lib/mcp');
 const strategies = require('./lib/strategies');
 const strategySpec = require('./lib/strategy-spec');
+strategies.byId['fable-discovery'] = require('./lib/fable-discovery');   // اكتشاف Fable: من بحثه على 2021–2024، مجمّد
 
 // ── استراتيجيات كتبتها النماذج: strategies/<id>.json (مجمّدة، ما تتعدل) ──────
 const SPEC_IDS = [['strat-fable', 'استراتيجية Fable'], ['strat-gpt', 'استراتيجية GPT'], ['strat-qwen', 'استراتيجية Qwen'], ['strat-deepseek', 'استراتيجية DeepSeek']];
@@ -162,6 +163,8 @@ const BOTS = [
     desc: 'يشتري لما الإغلاق ينزل تحت حد بولنجر السفلي (20، 2) والبتكوين فوق متوسط 200 يوم. يطلع عند الخط الأوسط، أو على وقف 2.5 ATR، أو بعد 5 أيام.' },
   { id: 'code-dca', name: 'الكود · شراء دوري ذكي', kind: 'code', runner: 'dca', strategy: 'dca', team: 'code',
     desc: 'كل أسبوع يشتري BTC و ETH بـ$30 لكل وحدة، و$60 إذا العملة تحت متوسط 50 يوم. الميزانية تكفي 8 أسابيع حتى لو كل الشراء مضاعف. ما يبيع وما له وقف.' },
+  { id: 'fable-discovery', name: 'اكتشاف Fable', kind: 'code', strategy: 'fable-discovery', team: 'code',
+    desc: 'Fable لقاها بنفسه من بحث على 2021–2024 (10 أفكار، بدون اختراقات):\n1. شموع 4 ساعات، شراء فقط (سبوت).\n2. السوق لازم يكون صاعد: البتكوين فوق متوسطه 200 ومتوسطه 50 فوق 200 (4 ساعات).\n3. العملة نفسها في اتجاه صاعد: متوسطها 50 فوق 200.\n4. يدخل لما السعر يرجع فوق متوسط 20 بعد ما كان تحته في الشمعة اللي قبلها.\n5. وقف خسارة 8%، ويطلع لما الشمعة تقفل تحت متوسط 50.\nيخسر لما: السوق هابط أو عرضي، أو البتكوين يتذبذب حول متوسطه 200.\nفي الفحص المستقل (2025→الحين): −30%.' },
   { id: 'past-strategy', name: 'الماضي · استراتيجية', kind: 'webhook', team: 'past',
     desc: 'استراتيجية مختبرة على سنين في TradingView، ترسل إشاراتها هنا.' },
   { id: 'random', name: 'العشوائي', kind: 'random', referee: true,
@@ -1010,6 +1013,7 @@ async function runCodeBot(def, now) {
   if (universe.every(sym => (seen[sym] ?? -1) >= lastClosedStart)) return;
 
   const btc1d = strat.uses?.includes('btc1d') ? await market.klines('BTCUSDT', '1d', 1000) : null;
+  const btc4h = strat.uses?.includes('btc4h') ? (await market.klines('BTCUSDT', '4h', 1000)).filter(c => c.t + 4 * 3_600_000 <= now) : null;
   const exits = [], signals = [], notes = [];
   for (const sym of universe) {
     let candles;
@@ -1020,7 +1024,7 @@ async function runCodeBot(def, now) {
     if ((seen[sym] ?? -1) >= c.t) continue;
     seen[sym] = c.t;
     const d1 = strat.uses?.includes('d1') ? await market.klines(sym, '1d', 1000) : null;
-    const S = strat.prepare(candles, { btc1d, d1 });
+    const S = strat.prepare(candles, { btc1d, d1, btc4h });
     const trade = activeTrades(def.id).find(t => t.symbol === sym);
 
     if (trade) {

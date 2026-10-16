@@ -95,3 +95,16 @@ test('pullback and bollinger give the same signals live (last 1000 candles) as i
     assert.ok(n > 0, `${id} should signal on the synthetic data`);
   }
 });
+
+test('fable-discovery is the frozen file from the research workspace and runs on the code engine', () => {
+  const f = require('../lib/fable-discovery');
+  assert.strictEqual(f.id, 'fable-discovery');
+  assert.strictEqual(f.tf, '4h');
+  assert.deepStrictEqual(f.uses, ['btc4h']);
+  assert.strictEqual(st.byId['fable-discovery'], f, 'registered by the server');
+  const t0 = Date.UTC(2024, 0, 1);
+  const c = Array.from({ length: 400 }, (_, i) => { const p = 100 * 1.002 ** i * (i === 398 ? 0.97 : 1); return { t: t0 + i * H4, open: p, high: p, low: p, close: p, quoteVolume: 1 }; });
+  const S = f.prepare(c, { btc4h: c });
+  assert.ok(f.entry(S, 399), 'reclaim of EMA20 in an uptrend');
+  assert.ok(Math.abs(f.initialStop(S, 399) / c[399].close - 0.92) < 1e-12);
+});
