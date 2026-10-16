@@ -54,7 +54,7 @@ test('initialize, notifications and tools/list follow MCP', async () => {
 test('read tools return data', async () => {
   const o = await call('get_overview');
   assert.strictEqual(o.isError, false);
-  assert.strictEqual(o.data.leaderboard.length, 21);
+  assert.strictEqual(o.data.leaderboard.length, 25);
   for (const id of ["strat-fable", "strat-gpt", "strat-qwen", "strat-deepseek"]) assert.ok(o.data.leaderboard.some(b => b.id === id), id);
   assert.strictEqual(o.data.fable.rounds, 0);
   const r = await call('get_rules');

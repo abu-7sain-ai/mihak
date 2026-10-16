@@ -154,6 +154,14 @@ const BOTS = [
   { id: 'code-breakout-nobtc', name: 'الكود · بريك أوت بدون بتكوين', kind: 'code', strategy: 'base-breakout', team: 'code',
     desc: 'نفس «الكود · بريك أوت + فلتر البتكوين» بالضبط بس بدون فلتر البتكوين: كسر أعلى 20 شمعة (4 ساعات) والاتجاه صاعد فوق EMA200. وقف 2.5 ATR، ووقف ملاحق 3 ATR على الإغلاق. للمقارنة: وش يضيف فلتر البتكوين؟' },
   ...SPEC_IDS.map(([id, name]) => ({ id, name, kind: 'code', strategy: id, spec: true, team: 'code', desc: specDesc(id) })),
+  { id: 'code-rotation', name: 'الكود · تدوير أقوى العملات', kind: 'code', runner: 'rank', strategy: 'rotation-1d', team: 'code',
+    desc: 'كل أسبوع (إغلاق الأحد UTC) يرتّب العملات الـ16 حسب ربح آخر 30 يوم، ويمسك أقوى 3 بشرط تكون فوق متوسط 200 يوم. اللي تطلع من القائمة يبيعها، وإذا ولا وحدة مؤهلة يقعد كاش. وقف أمان −15% من سعر الدخول.' },
+  { id: 'code-pullback', name: 'الكود · شراء النزلة', kind: 'code', strategy: 'pullback-rsi2-4h', team: 'code',
+    desc: 'يشتري لما RSI(2) على 4 ساعات ينزل تحت 10 والسعر فوق EMA200 الطالع (نزلة قصيرة داخل اتجاه صاعد). يطلع لما الإغلاق فوق SMA(5)، أو على وقف 2.5 ATR، أو بعد 5 أيام.' },
+  { id: 'code-bollinger', name: 'الكود · حدود البولنجر', kind: 'code', strategy: 'bollinger-4h', team: 'code',
+    desc: 'يشتري لما الإغلاق ينزل تحت حد بولنجر السفلي (20، 2) والبتكوين فوق متوسط 200 يوم. يطلع عند الخط الأوسط، أو على وقف 2.5 ATR، أو بعد 5 أيام.' },
+  { id: 'code-dca', name: 'الكود · شراء دوري ذكي', kind: 'code', runner: 'dca', strategy: 'dca', team: 'code',
+    desc: 'كل أسبوع يشتري BTC و ETH بـ$30 لكل وحدة، و$60 إذا العملة تحت متوسط 50 يوم. الميزانية تكفي 8 أسابيع حتى لو كل الشراء مضاعف. ما يبيع وما له وقف.' },
   { id: 'past-strategy', name: 'الماضي · استراتيجية', kind: 'webhook', team: 'past',
     desc: 'استراتيجية مختبرة على سنين في TradingView، ترسل إشاراتها هنا.' },
   { id: 'random', name: 'العشوائي', kind: 'random', referee: true,
@@ -287,18 +295,19 @@ function blockReason(id) {
 }
 
 // ── فتح وإغلاق الصفقات ──────────────────────────────────────────────────────
-async function enterTrade(id, { symbol, confidence = null, reason = null, tpPercent, slPercent, maxMinutes, round = null, extra = null }) {
+// amount/force: للشراء الدوري بس (مبلغ غير مبلغ الصفقة، وما يتقيد بالخانات)
+async function enterTrade(id, { symbol, confidence = null, reason = null, tpPercent, slPercent, maxMinutes, round = null, extra = null, amount: amountOverride = null, force = false }) {
   const bot = state.bots[id];
   const r = R();
   if (activeTrades(id).some(t => t.symbol === symbol)) return { error: `فيه صفقة مفتوحة على ${symbol}` };
-  const blocked = blockReason(id);
+  const blocked = force ? (bot.balance < (amountOverride ?? r.tradeAmount) ? 'الرصيد ما يكفي' : null) : blockReason(id);
   if (blocked) return { error: blocked };
 
   let price;
   try { price = await market.price(symbol); }
   catch (e) { return { error: `ما قدرنا نجيب سعر ${symbol}: ${e.message}` }; }
 
-  const amount = r.tradeAmount;
+  const amount = amountOverride ?? r.tradeAmount;
   const { fill, qty, feeIn } = acc.openPosition(amount, price, r);
   const tp = tpPercent ?? null;
   const sl = slPercent ?? r.stopLossPercent;
@@ -897,10 +906,96 @@ async function runCodeBots(now = Date.now()) {
   codeRunning = true;
   try {
     for (const def of BOTS.filter(b => b.kind === 'code')) {
-      try { await runCodeBot(def, now); }
+      const run = def.runner === 'rank' ? runRankBot : def.runner === 'dca' ? runDcaBot : runCodeBot;
+      try { await run(def, now); }
       catch (e) { state.bots[def.id].system.lastError = e.message; log.err(`[${def.id}] ${e.message}`); }
     }
   } finally { codeRunning = false; }
+}
+
+// آخر شمعة يومية سكّرت، وهل هي شمعة الأحد (UTC) وسكّرت قريب. ترجع null إذا ما فيه شي نسويه
+function weeklyTrigger(bot, now) {
+  const day = strategies.DAY;
+  const lastStart = Math.floor(now / day) * day - day;
+  bot.codeState ??= { lastCandle: {} };
+  if ((bot.codeState.lastDay ?? -1) >= lastStart) return null;
+  if (new Date(lastStart).getUTCDay() !== 0 || now - (lastStart + day) > CODE_FRESH_MS['1d']) {
+    bot.codeState.lastDay = lastStart;
+    return null;
+  }
+  return lastStart;
+}
+
+// تدوير أقوى العملات: كل أسبوع أقوى 3 على 30 يوم فوق متوسط 200 يوم، ووقف أمان −15%
+async function runRankBot(def, now) {
+  const strat = strategies.byId[def.strategy];
+  const bot = state.bots[def.id];
+  const sunday = weeklyTrigger(bot, now);
+  if (sunday == null) return;
+  const scored = [], notes = [];
+  for (const sym of universe) {
+    let c;
+    try { c = (await market.klines(sym, '1d', 400)).filter(x => x.t + strategies.DAY <= now); }
+    catch (e) { notes.push(`${sym}: ${e.message}`); continue; }
+    if (!c.length || c.at(-1).t !== sunday) continue;
+    const S = strat.prepare(c), sc = strat.score(S, c.length - 1);
+    if (sc != null) scored.push({ sym, sc });
+  }
+  bot.codeState.lastDay = sunday;
+  const keep = new Set(scored.sort((a, b) => b.sc - a.sc).slice(0, strat.hold).map(x => x.sym));
+  const sold = [], bought = [];
+  for (const t of activeTrades(def.id).filter(t => !keep.has(t.symbol))) {
+    closeTrade(t, 'signal-exit', await market.price(t.symbol).catch(() => t.currentPrice));
+    sold.push(t.symbol);
+  }
+  for (const sym of keep) {
+    if (activeTrades(def.id).some(t => t.symbol === sym)) continue;
+    const res = await enterTrade(def.id, { symbol: sym, reason: 'من أقوى 3 هالأسبوع', tpPercent: null, slPercent: -strat.stopPctFromEntry, maxMinutes: null, extra: { strategy: strat.id } });
+    if (res.error) notes.push(`${sym}: ${res.error}`); else bought.push(sym);
+  }
+  recordDecision(def.id, {
+    action: bought.length ? 'BUY' : sold.length ? 'SELL' : 'WAIT', symbol: bought[0] || sold[0] || null,
+    reason: [keep.size ? `الأقوى: ${[...keep].join('، ')}` : 'ولا عملة فوق متوسط 200 يوم: كاش', bought.length && `دخل: ${bought.join('، ')}`, sold.length && `خرج: ${sold.join('، ')}`, notes.join(' | ')].filter(Boolean).join(' · '),
+  });
+  bot.system.lastRun = now; bot.system.lastError = null;
+  dirty = true; saveDb();
+}
+
+// شراء دوري ذكي: كل أسبوع BTC و ETH، الضعف إذا تحت متوسط 50 يوم. مركز واحد لكل عملة يكبر، بدون وقف وبدون بيع
+async function runDcaBot(def, now) {
+  const D = strategies.DCA;
+  const bot = state.bots[def.id];
+  const sunday = weeklyTrigger(bot, now);
+  if (sunday == null) return;
+  const done = [], notes = [];
+  for (const sym of D.coins) {
+    let c;
+    try { c = (await market.klines(sym, '1d', 400)).filter(x => x.t + strategies.DAY <= now); }
+    catch (e) { notes.push(`${sym}: ${e.message}`); continue; }
+    if (!c.length || c.at(-1).t !== sunday) continue;
+    const sma = strategies.smaS(c.map(x => x.close), D.smaLen).at(-1);
+    const below = sma != null && c.at(-1).close < sma;
+    const amount = below ? D.double : D.base;
+    if (bot.balance < amount) { notes.push(`${sym}: الميزانية خلصت`); continue; }
+    const open = activeTrades(def.id).find(t => t.symbol === sym);
+    if (open) {
+      let price;
+      try { price = await market.price(sym); } catch (e) { notes.push(`${sym}: ${e.message}`); continue; }
+      const { fill, qty, feeIn } = acc.openPosition(amount, price, R());
+      open.entryPrice = (open.entryPrice * open.qty + fill * qty) / (open.qty + qty);   // متوسط سعر الشراء
+      open.qty += qty; open.amount += amount; open.feesUSD = acc.round(open.feesUSD + feeIn, 4);
+      open.buys = (open.buys || 1) + 1;
+      bot.balance -= amount;
+    } else {
+      const res = await enterTrade(def.id, { symbol: sym, reason: 'شراء دوري', tpPercent: null, slPercent: -100, maxMinutes: null, amount, force: true, extra: { strategy: 'dca', buys: 1 } });
+      if (res.error) { notes.push(`${sym}: ${res.error}`); continue; }
+    }
+    done.push(`${sym} $${amount}${below ? ' (تحت متوسط 50، مضاعف)' : ''}`);
+  }
+  bot.codeState.lastDay = sunday;
+  recordDecision(def.id, { action: done.length ? 'BUY' : 'WAIT', symbol: null, reason: [done.join('، '), notes.join(' | ')].filter(Boolean).join(' · ') || 'ما فيه شراء' });
+  bot.system.lastRun = now; bot.system.lastError = null;
+  dirty = true; saveDb();
 }
 
 async function runCodeBot(def, now) {

@@ -71,7 +71,8 @@ function makeRunner(strat, sym, period) {
       if (!allowed) { R.skipped++; return; }
       const c = candles[i];
       const { fill, qty } = acc.openPosition(AMOUNT, c.open, RULES);
-      R.pos = { t: c.t, idx: i, amount: AMOUNT, qty, entryPrice: fill, stop: R.pendingStop, highestHigh: c.high, highestClose: c.open };
+      const stop = strat.stopPctFromEntry ? fill * (1 - strat.stopPctFromEntry / 100) : R.pendingStop;
+      R.pos = { t: c.t, idx: i, amount: AMOUNT, qty, entryPrice: fill, stop, highestHigh: c.high, highestClose: c.open };
     },
     // داخل الشمعة: الوقف
     stopCheck(i) {
@@ -143,19 +144,20 @@ function perCoin(strat, period) {
 }
 
 // الترتيب الأسبوعي: نمشي على الأيام كلها مع بعض
-function runRank(strat, runners, allowEntry) {
+function runRank(strat, runners, allowEntry, onClose = () => {}) {
   const byDay = new Map();
   runners.forEach(R => R.idx.forEach(i => { const t = R.candles[i].t; if (!byDay.has(t)) byDay.set(t, []); byDay.get(t).push([R, i]); }));
   const days = [...byDay.keys()].sort((a, b) => a - b);
   days.forEach((t, k) => {
     const today = byDay.get(t);
-    today.forEach(([R, i]) => R.execExit(i));
+    today.forEach(([R, i]) => onClose(R.execExit(i), t));
     today.forEach(([R, i]) => R.execEntry(i, R.wantsEntry() ? allowEntry(R, i) : true));
+    today.forEach(([R, i]) => onClose(R.stopCheck(i), t));
     const last = k === days.length - 1;
     today.forEach(([R, i]) => {
       R.pending = null;
       if (R.pos) R.pos.highestHigh = Math.max(R.pos.highestHigh, R.candles[i].high);
-      if (i === R.idx.at(-1) && R.pos) R.close(R.candles[i].close, 'period-end', R.candles[i].t);
+      if (i === R.idx.at(-1) && R.pos) onClose(R.close(R.candles[i].close, 'period-end', R.candles[i].t), t);
       const end = R.candles[i].t + DAY;
       R.equity.set(end, R.realized + (R.pos ? acc.tradePnl(R.pos, R.candles[i].close, RULES).pnl : 0));
     });
@@ -191,8 +193,7 @@ function portfolio(strat, period) {
   const take = R => { st.balance -= AMOUNT; return true; };
 
   if (strat.rank) {
-    runRank(strat, runners, () => open() < LIVE.slots);
-    // الأرباح تنحسب من الصفقات (الإيقاف بعد الخسائر ما ينطبق على الترتيب الأسبوعي هنا)
+    runRank(strat, runners, (R, i) => allowed(R, R.candles[i].t) && take(R), onClose);
     return summarize(strat, runners, period);
   }
   const byT = new Map();
@@ -251,15 +252,64 @@ function verdict(r) {
   return fails;
 }
 
+// ── الشراء الدوري (DCA) والشراء والاحتفاظ: بنفس المحاسبة ─────────────────────
+// الاختبار: نفس القاعدة (الميزانية تكفي كل الأسابيع حتى لو كل الشراء مضاعف)، بس على أسابيع الفترة كلها
+function dcaSim(period) {
+  const { DCA } = require('../lib/strategies');
+  const { smaS } = require('../lib/strategies');
+  const coins = DCA.coins.map(sym => {
+    const c = load(sym, '1d');
+    return { sym, c, sma: smaS(c.map(x => x.close), DCA.smaLen) };
+  });
+  const days = coins[0].c.filter(x => x.t >= period[0] && x.t < period[1]);
+  const mondays = days.filter(x => new Date(x.t).getUTCDay() === 1);
+  const base = LIVE.balance / (coins.length * mondays.length * (DCA.double / DCA.base));
+  let cash = LIVE.balance, buys = 0;
+  const hold = coins.map(() => ({ qty: 0, invested: 0 }));
+  const curve = new Map();
+  for (const d of days) {
+    coins.forEach((co, k) => {
+      const j = co.c.findIndex(x => x.t === d.t);
+      if (j < 1 || new Date(d.t).getUTCDay() !== 1) return;
+      const below = co.sma[j - 1] != null && co.c[j - 1].close < co.sma[j - 1];   // آخر إغلاق يومي (الأحد)
+      const amt = below ? base * DCA.double / DCA.base : base;
+      if (cash < amt - 1e-9) return;
+      const { qty } = acc.openPosition(amt, co.c[j].open, RULES);
+      hold[k].qty += qty; hold[k].invested += amt; cash -= amt; buys++;
+    });
+    const value = coins.reduce((s, co, k) => {
+      const x = co.c.find(y => y.t === d.t);
+      return s + (x ? acc.liquidationValue(hold[k].qty, acc.exitFill('period-end', x.close, null, RULES), RULES).net : 0);
+    }, 0);
+    curve.set(d.t, cash + value - LIVE.balance);
+  }
+  return finish('dca', curve, buys, null);
+}
+function hodlSim(period) {
+  const c = load('BTCUSDT', '1d').filter(x => x.t >= period[0] && x.t < period[1]);
+  const { qty } = acc.openPosition(LIVE.balance, c[0].open, RULES);
+  const curve = new Map(c.map(x => [x.t, acc.liquidationValue(qty, acc.exitFill('period-end', x.close, null, RULES), RULES).net - LIVE.balance]));
+  return finish('hodl', curve, 1, null);
+}
+function finish(id, curve, trades, pf) {
+  const v = [...curve.values()];
+  const { dd, ddPct } = maxDrawdown([curve], LIVE.balance);
+  const total = v.at(-1);
+  return { id, name: id, total, trades, coinsProfitable: null, beatsBH: null, topShare: null, maxDD: dd, profitFactor: pf, winRate: null, fails: [],
+    live: { slots: LIVE.slots, total, returnPct: total / LIVE.balance * 100, trades, maxDD: dd, maxDDPct: ddPct, profitFactor: pf, skipped: 0 } };
+}
+
 if (require.main === module) {
   const arg = k => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : null; };
   const periodName = arg('period') || 'dev';
   if (arg('rules')) useLiveRules(JSON.parse(fs.readFileSync(arg('rules'), 'utf-8')));
   const only = arg('only') ? arg('only').split(',') : null;
   if (periodName !== 'dev' && !only) { console.error('oos/full تحتاج --only (الفحص على 2025 مرة وحدة بس، للقائمة القصيرة)'); process.exit(1); }
-  const list = only ? only.map(id => byId[id] || (() => { throw new Error(`unknown ${id}`); })()) : STRATEGIES.filter(s => !s.baseline);
+  const SPECIAL = { dca: dcaSim, hodl: hodlSim };
+  const list = only ? only.map(id => SPECIAL[id] ? { id, special: SPECIAL[id] } : byId[id] || (() => { throw new Error(`unknown ${id}`); })()) : STRATEGIES.filter(s => !s.baseline && !s.contestant);
   const period = PERIODS[periodName];
   const out = list.map(s => {
+    if (s.special) return s.special(period);
     const a = perCoin(s, period), b = portfolio(s, period);
     return { ...a, fails: verdict(a), live: { slots: LIVE.slots, total: b.total, returnPct: b.total / LIVE.balance * 100, trades: b.trades, maxDD: b.maxDD, maxDDPct: b.maxDDPct, profitFactor: b.profitFactor, skipped: b.skipped, winRate: b.winRate } };
   });
