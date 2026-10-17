@@ -509,6 +509,7 @@ bdi.n { direction: ltr; unicode-bidi: isolate; font-family: var(--mono); }
     <span id="cb-badge" class="badge badge-warn" style="display:none">⏸ موقوف</span>
   </div>
 </header>
+<div id="regime-line" style="padding:6px 16px;font-size:.8rem;color:var(--muted);border-bottom:1px solid var(--bd)"></div>
 
 <!-- ── NAVIGATION ─────────────────────────────────────────────────────── -->
 <nav class="nav">
@@ -872,6 +873,7 @@ function currentView() { return document.querySelector('.view.active')?.id?.repl
 
 function renderAll() {
   if (!G || !S) return;
+  $('regime-line').textContent = (G.regime?.line || 'حالة السوق: ما انحسبت بعد') + (G.aiPaused ? ' · ⏸️ الموديلات موقوفة لتوفير التكلفة' : '');
   renderHeader();
   const cur = currentView();
   $('bot-chips').style.display = (cur === 'competition' || cur === 'settings') ? 'none' : 'flex';

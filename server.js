@@ -17,6 +17,8 @@ const ind = require('./lib/indicators');
 const { createMcpHandler } = require('./lib/mcp');
 const strategies = require('./lib/strategies');
 const strategySpec = require('./lib/strategy-spec');
+const { computeRegime, regimeLine } = require('./lib/regime');
+const { createTelegram } = require('./lib/telegram');
 strategies.byId['fable-discovery'] = require('./lib/fable-discovery');   // اكتشاف Fable: من بحثه على 2021–2024، مجمّد
 
 // ── استراتيجيات كتبتها النماذج: strategies/<id>.json (مجمّدة، ما تتعدل) ──────
@@ -92,6 +94,7 @@ const DEFAULT_RULES = {
   strategyStopLossPercent: -3,  // وقف افتراضي لـ"الماضي" إذا الإشارة ما حددت وقف
   ruleChairMinVotes: 2,         // المدير بالكود: كم خبير لازم يقول ENTER (من 3)
   ruleChairMinConfidence: 60,   // المدير بالكود: أقل متوسط ثقة للموافقين
+  aiPaused: true,               // يوقف كل شغل الذكاء الاصطناعي المدفوع (OpenRouter + جولات Fable). يتغير حتى بعد قفل القوانين
 };
 
 const RULE_LIMITS = {
@@ -173,6 +176,12 @@ const BOTS = [
     desc: 'حَكَم: يشتري بتكوين بكل الرصيد أول يوم ويقعد. إذا ما غلبته، أحسن لك تشتري وترتاح.' },
 ];
 const BOT = Object.fromEntries(BOTS.map(b => [b.id, b]));
+// عائلات الذكاء الاصطناعي (now-*): تتوقف مع aiPaused. متسابقين الكود و"الماضي" يكملون عادي
+const AI_KINDS = new Set(['ai', 'meeting', 'always']);
+const isAiBot = id => AI_KINDS.has(BOT[id]?.kind);
+const AI_PAUSED_NOTE = 'متوقف مؤقتاً لتوفير التكلفة';
+let tg = null;
+const telegram = () => (tg ||= createTelegram({ log }));
 
 // ── السجل ────────────────────────────────────────────────────────────────────
 const ts = () => new Date().toISOString();
@@ -204,6 +213,8 @@ let state = {
   bots: Object.fromEntries(BOTS.map(b => [b.id, freshBot(DEFAULT_RULES)])),
   news: { text: null, at: null, searches: 0, error: null },
   opportunities: [],   // كل فرصة لقاها كشّاف + أصوات الاجتماع + نتيجتها الافتراضية
+  regime: null,        // حالة السوق: البتكوين مقابل متوسط 200 يوم
+  telegram: { lastDeploy: null, lastWeekly: null },
   fable: freshFable(), // جولات كشّاف Fable: كم وحدة رد فيها وكم فاتته
   system: { bootAt: Date.now(), nextDecisionAt: null, universe: [] },
 };
@@ -285,6 +296,7 @@ function todayRealized(id) {
 function blockReason(id) {
   const bot = state.bots[id];
   const r = R();
+  if (r.aiPaused && isAiBot(id)) return AI_PAUSED_NOTE;
   if (bot.cb.pausedUntil && Date.now() < bot.cb.pausedUntil)
     return `موقوف مؤقتاً بعد ${r.consecutiveLossLimit} خسائر متتالية`;
   if (bot.cb.pausedUntil && Date.now() >= bot.cb.pausedUntil) {
@@ -836,6 +848,7 @@ function missFableRound() {
 // يرجع { status, body }. القرار يتطبق بالخلفية (الاجتماع ياخذ وقت)
 function submitFableDecision(body = {}) {
   const r = fableRound;
+  if (R().aiPaused) return { status: 409, body: { error: 'الموديلات موقوفة (aiPaused)' } };
   if (!r) return { status: 409, body: { error: 'ما فيه جولة مفتوحة' } };
   if (body.roundId !== r.id) return { status: 409, body: { error: 'الجولة مو نفس الجولة المفتوحة', roundId: r.id } };
   if (r.status !== 'waiting') return { status: 409, body: { error: `الجولة حالتها ${r.status}`, roundId: r.id } };
@@ -1077,6 +1090,62 @@ async function runCodeBot(def, now) {
   saveDb();
 }
 
+// ── مراقب حالة السوق وتنبيهات تيليجرام (كود بس، مجاني) ───────────────────────
+// يتحسب مرة باليوم بعد إغلاق البتكوين اليومي (00:05 UTC)، وأول ما يشتغل السيرفر
+async function updateRegime(now = Date.now()) {
+  const day = strategies.DAY;
+  const lastStart = Math.floor(now / day) * day - day;
+  if (state.regime && state.regime.asOfT >= lastStart) return state.regime;
+  if (state.regime && now - (lastStart + day) < 5 * 60_000) return state.regime;
+  const daily = (await market.klines('BTCUSDT', '1d', 1000)).filter(c => c.t + day <= now);
+  const r = computeRegime(daily);
+  if (!r) return state.regime;
+  const prev = state.regime?.state;
+  state.regime = { ...r, line: regimeLine(r), at: Date.now() };
+  dirty = true;
+  saveDb();
+  if (prev && prev !== r.state) {
+    const nums = `البتكوين ${Math.round(r.btcClose).toLocaleString('en-US')} · متوسط 200 يوم ${Math.round(r.sma200).toLocaleString('en-US')} · ${r.distancePct > 0 ? '+' : ''}${r.distancePct}%`;
+    log.ok(`حالة السوق تغيّرت: ${prev} → ${r.state}`);
+    await telegram().sendMessage(r.state === 'bull'
+      ? `📈 البتكوين قفل يومين فوق متوسط 200 يوم — وقت نرجع الموديلات ونبدأ المسابقة\n${nums}`
+      : `📉 البتكوين رجع قفل يومين تحت متوسط 200 يوم — السوق هابط مرة ثانية\n${nums}`);
+  }
+  return state.regime;
+}
+
+// ملخص أسبوعي: الأحد 20:00 بتوقيت الكويت (17:00 UTC)، مرة وحدة
+async function weeklySummary(now = Date.now()) {
+  const d = new Date(now);
+  if (d.getUTCDay() !== 0 || d.getUTCHours() < 17) return null;
+  const key = d.toISOString().slice(0, 10);
+  if (state.telegram.lastWeekly === key) return null;
+  state.telegram.lastWeekly = key;
+  dirty = true;
+  saveDb();
+  const lb = clientSnapshot().leaderboard;
+  const row = (b, k) => `${k}. ${b.name}${b.referee ? ' (حَكَم)' : ''}: ${b.returnPct > 0 ? '+' : ''}${b.returnPct}%`;
+  const open = BOTS.reduce((s, b) => s + activeTrades(b.id).length, 0);
+  const text = [
+    '📊 ملخص الأسبوع — المِحَك',
+    regimeLine(state.regime),
+    R().aiPaused ? '⏸️ الموديلات موقوفة لتوفير التكلفة' : '▶️ الموديلات شغّالة',
+    '', 'الأفضل:', ...lb.slice(0, 5).map((b, k) => row(b, k + 1)),
+    '', 'الأضعف:', ...lb.slice(-3).map((b, k) => row(b, lb.length - 2 + k)),
+    '', `الصفقات المفتوحة: ${open}`,
+  ].join('\n');
+  await telegram().sendMessage(text);
+  return text;
+}
+
+// رسالة "متصل" مرة وحدة لكل نشر جديد (مو مع كل إعادة تشغيل)
+async function announceDeploy() {
+  const dep = ENV.RAILWAY_DEPLOYMENT_ID || null;
+  if (!dep || !telegram().enabled || state.telegram.lastDeploy === dep) return;
+  const res = await telegram().sendMessage(`المحك متصل ✅\n${regimeLine(state.regime)}${R().aiPaused ? '\n⏸️ الموديلات موقوفة لتوفير التكلفة' : ''}`);
+  if (res.ok) { state.telegram.lastDeploy = dep; dirty = true; saveDb(); log.ok('تيليجرام: رسالة الاتصال وصلت'); }
+}
+
 async function runRandomBot(round = null) {
   const id = 'random';
   const blocked = blockReason(id);
@@ -1104,6 +1173,12 @@ async function decisionCycle() {
     await ensureHodl();
     // رقم الجولة = بداية ربع الساعة. نفس الرقم لكل العائلات عشان المقارنة
     const round = Math.floor(Date.now() / (R().decisionIntervalMinutes * 60_000)) * R().decisionIntervalMinutes * 60_000;
+    if (R().aiPaused) {
+      // ما فيه أي طلب OpenRouter: لا أخبار ولا كشّافين ولا اجتماعات، ولا جولة Fable. الحَكَم العشوائي يكمل
+      log.info('جولة: الموديلات موقوفة (ما فيه طلبات OpenRouter)');
+      await runRandomBot(round);
+      return;
+    }
     const needsAi = BOTS.some(b => (b.kind === 'ai' || b.kind === 'meeting' || b.kind === 'always') && !blockReason(b.id));
     if (needsAi && (DEMO || KEYS.xai || KEYS.openrouter)) await refreshNews();
     let snapshot = [];
@@ -1228,6 +1303,8 @@ function clientSnapshot() {
     universe,
     news: state.news,
     nextDecisionAt: state.system.nextDecisionAt,
+    aiPaused: !!R().aiPaused,
+    regime: state.regime ? { ...state.regime, line: regimeLine(state.regime) } : null,
     keys: { xai: !!KEYS.xai, openrouter: !!KEYS.openrouter, webhook: !!KEYS.webhook },
     models: MODELS,
     meetings: Object.fromEntries(BOTS.filter(b => b.kind === 'ai').map(b => [b.id, meetingStats(b.id)])),
@@ -1277,6 +1354,7 @@ app.all('/mcp/:secret', (req, res) => (mcpRoute ||= createMcpHandler({
 const fableAuthed = req => !!KEYS.mcp && safeEqual(req.get('x-mihak-secret') || '', KEYS.mcp);
 app.get('/api/fable/round', (req, res) => {
   if (!fableAuthed(req)) return res.status(404).end();
+  if (R().aiPaused) return res.json({ status: 'paused', now: Date.now() });
   const r = fableRound;
   if (!r) return res.json({ status: 'none', now: Date.now() });
   const out = { status: r.status, roundId: r.id, openedAt: r.openedAt, deadline: r.deadline, now: Date.now() };
@@ -1320,10 +1398,28 @@ function resetAllBots() {
 // ── الأفعال (تستخدمها اللوحة وموصّل MCP) — كلها ترجع { status, body } ──────
 const actions = {
   async setRules(input) {
-    if (state.competition.locked)
-      return { status: 423, body: { errors: ['القوانين مقفولة لأن المسابقة بدأت. ما تتغير بالنص.'] } };
+    input = { ...(input || {}) };
+    const hasPause = 'aiPaused' in input;
+    const pause = input.aiPaused;
+    delete input.aiPaused;
+    if (hasPause && typeof pause !== 'boolean') return { status: 400, body: { errors: ['aiPaused: لازم true أو false'] } };
+    const others = Object.keys(input).filter(k => k in RULE_LIMITS);
+    if (state.competition.locked && others.length)
+      return { status: 423, body: { errors: ['القوانين مقفولة لأن المسابقة بدأت. ما تتغير بالنص (aiPaused بس يتغير).'] } };
+    if (hasPause && pause !== !!state.rules.aiPaused) {
+      state.rules.aiPaused = pause;
+      if (pause && fableRound?.status === 'waiting') {
+        // جولة Fable المفتوحة تنلغى بدون ما تنحسب "فاتته"
+        clearTimeout(fableTimer);
+        fableRound.status = 'paused';
+        state.fable.rounds = Math.max(0, state.fable.rounds - 1);
+        if (state.fable.lastRound) state.fable.lastRound.status = 'paused';
+      }
+      log.info(pause ? '⏸ الموديلات موقوفة (aiPaused)' : '▶ رجعت الموديلات (aiPaused=false)');
+      telegram().sendMessage(pause ? '⏸️ المحك: الموديلات موقوفة لتوفير التكلفة. متسابقين الكود يكملون.' : '▶️ المحك: رجعت الموديلات وجولات Fable.');
+    }
     const errs = [];
-    for (const [k, v] of Object.entries(input || {})) {
+    for (const [k, v] of Object.entries(input)) {
       if (!(k in RULE_LIMITS)) continue;
       const [lo, hi] = RULE_LIMITS[k];
       if (typeof v !== 'number' || !Number.isFinite(v) || v < lo || v > hi) { errs.push(`${k}: لازم بين ${lo} و ${hi}`); continue; }
@@ -1388,6 +1484,7 @@ const actions = {
   },
 
   async refreshNews() {
+    if (R().aiPaused) return { status: 409, body: { error: 'الموديلات موقوفة (aiPaused)، فما فيه جلب أخبار' } };
     if (!DEMO && !KEYS.xai && !KEYS.openrouter) return { status: 400, body: { error: 'ما فيه مفتاح للأخبار' } };
     await refreshNews(true);
     dirty = true;
@@ -1450,6 +1547,8 @@ function mcpTools() {
           mode: snap.mode, competition: snap.competition, keys: snap.keys, models: snap.models,
           serverTime: iso(snap.serverTime), nextDecisionAt: iso(snap.nextDecisionAt),
           news: { at: iso(state.news.at), error: state.news.error, searches: state.news.searches },
+          aiPaused: snap.aiPaused,
+          regime: snap.regime,
           fable: snap.fable,
           fairComparison: snap.fairComparison,
           universe: snap.universe,
@@ -1513,8 +1612,8 @@ function mcpTools() {
       run: () => ({ ...state.news, at: iso(state.news.at) }) },
 
     { name: 'set_rules', annotations: { title: 'تعديل القوانين', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-      description: 'Change one or more rules (numbers only, each within its range from get_rules). Refused while the competition is locked. Only when the owner asks.',
-      inputSchema: obj({ rules: { type: 'object', description: 'مثل {"minConfidence": 60}', additionalProperties: { type: 'number' } } }, ['rules']),
+      description: 'Change one or more rules (numbers within their range from get_rules). Refused while the competition is locked, except aiPaused (true/false), which pauses or resumes all paid AI work (OpenRouter scouts, meetings, news, Fable rounds). Only when the owner asks.',
+      inputSchema: obj({ rules: { type: 'object', description: 'مثل {"minConfidence": 60} أو {"aiPaused": false} لإرجاع الموديلات', additionalProperties: { type: ['number', 'boolean'] } } }, ['rules']),
       run: async ({ rules }) => result(await actions.setRules(rules)) },
 
     { name: 'resume_bot', annotations: { title: 'تشغيل متسابق موقوف', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -1613,6 +1712,11 @@ async function main() {
   setInterval(snapshotEquity, 5 * 60_000);
   setInterval(() => { if (dirty) saveDb(); }, 30_000);
   setInterval(loadUniverse, 6 * 3_600_000);
+  // مراقب السوق والملخص الأسبوعي (كل دقيقة نشيك؛ الشغل الفعلي مرة باليوم / بالأسبوع)
+  setInterval(() => { updateRegime().catch(e => log.err(`حالة السوق: ${e.message}`)); weeklySummary().catch(e => log.err(`الملخص: ${e.message}`)); }, 60_000);
+  try { await updateRegime(); log.ok(regimeLine(state.regime)); } catch (e) { log.err(`حالة السوق: ${e.message}`); }
+  if (R().aiPaused) log.info('⏸ الموديلات موقوفة (aiPaused): ما فيه طلبات OpenRouter ولا جولات Fable');
+  announceDeploy().catch(e => log.err(`تيليجرام: ${e.message}`));
   setInterval(() => runCodeBots().catch(e => log.err(`الكود: ${e.message}`)), 60_000);  // متسابقين الكود: كل دقيقة نشوف إذا سكّرت شمعة جديدة
   setTimeout(() => runCodeBots().catch(e => log.err(`الكود: ${e.message}`)), 15_000);
 
@@ -1633,4 +1737,4 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 function start() { server.listen(PORT, main); }
 if (require.main === module) start();
 
-module.exports = { start, app, server, _internals: { BOT, runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };
+module.exports = { start, app, server, _internals: { BOT, blockReason, updateRegime, weeklySummary, announceDeploy, setTelegram: t => { tg = t; }, actions, runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };

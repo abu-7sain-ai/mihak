@@ -23,6 +23,7 @@ const fam = ['now-fable', 'now-fable-chair', 'now-fable-rule', 'now-fable-always
 
 let srv, base;
 test.before(async () => {
+  S.state().rules.aiPaused = false;   // هالاختبارات عن شغل Fable نفسه
   S.setMarket({ unsubscribe() {}, subscribe() {}, price: async () => 100, klines: async () => candles });
   srv = http.createServer(app);
   await new Promise(r => srv.listen(0, r));
