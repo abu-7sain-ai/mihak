@@ -26,7 +26,7 @@ const CONTESTANTS = [
 
 function readKey() {
   if (process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_API_KEY;
-  for (const f of [path.join(ROOT, 'keys.env'), path.join(os.homedir(), 'Desktop', 'ghost-trader', 'keys.env')]) {
+  for (const f of [path.join(ROOT, '..', 'secrets', 'keys.env'), path.join(ROOT, 'keys.env')]) {   // Mihak/secrets أول
     if (!fs.existsSync(f)) continue;
     const line = fs.readFileSync(f, 'utf-8').split(/\r?\n/).find(l => l.startsWith('OPENROUTER_API_KEY='));
     if (line) return line.slice('OPENROUTER_API_KEY='.length).trim();

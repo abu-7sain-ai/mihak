@@ -30,10 +30,11 @@ function writeLog() {
   } catch { /* السجل ما يوقف التشغيل */ }
 }
 
-// السر من متغير البيئة، أو MCP_SECRET من keys.env جنب المشروع
+// السر من متغير البيئة، أو MCP_SECRET من keys.env: أول شي Mihak/secrets (جنب app)، وبعدين جنب المشروع
 function readSecret() {
   if (process.env.MIHAK_SECRET) return process.env.MIHAK_SECRET;
-  const file = path.join(HERE, '..', 'keys.env');
+  const file = [path.join(HERE, '..', '..', 'secrets', 'keys.env'), path.join(HERE, '..', 'keys.env')].find(f => fs.existsSync(f));
+  if (!file) throw new Error('keys.env مو موجود (Mihak/secrets أو جنب المشروع)');
   const line = fs.readFileSync(file, 'utf-8').split(/\r?\n/).find(l => l.startsWith('MCP_SECRET='));
   if (!line) throw new Error('MCP_SECRET مو موجود في keys.env');
   return line.slice('MCP_SECRET='.length).trim();
