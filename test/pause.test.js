@@ -53,45 +53,61 @@ test('aiPaused can be flipped even when the rules are locked, and each flip send
   S.state().competition.locked = false;
 });
 
-// شموع البتكوين اليومية: 300 يوم ثابت، ثم مسار نختاره لآخر الأيام
-const btc = tail => {
+// شموع البتكوين اليومية: بداية نختارها، ثم مسار لآخر الأيام
+const btc = (tail, base = Array.from({ length: 300 }, () => 100)) => {
   const t0 = Date.UTC(2025, 0, 1);
-  const base = Array.from({ length: 300 }, () => 100);
   return [...base, ...tail].map((close, i) => ({ t: t0 + i * DAY, open: close, high: close, low: close, close }));
 };
+const rising = Array.from({ length: 300 }, (_, i) => 100 + i);   // متوسط 50 ≈ 375 فوق متوسط 200 ≈ 300
 
-test('regime: bull needs 2 closes above the 200-day SMA, one close back below does not flip it', () => {
+test('regime: bear / correction / bull with 2-close confirmation, and one close does not flip it', () => {
   assert.strictEqual(computeRegime(btc([90, 90])).state, 'bear');
-  const one = computeRegime(btc([90, 90, 120]));
-  assert.strictEqual(one.state, 'bear');
-  assert.strictEqual(one.daysAbove, 1);
-  const two = computeRegime(btc([90, 90, 120, 121]));
-  assert.strictEqual(two.state, 'bull');
-  assert.strictEqual(two.daysAbove, 2);
-  assert.ok(two.distancePct > 0 && two.sma200 > 0);
-  assert.strictEqual(two.since, two.asOf);
-  assert.strictEqual(computeRegime(btc([90, 90, 120, 121, 80])).state, 'bull');
-  assert.strictEqual(computeRegime(btc([90, 90, 120, 121, 80, 80])).state, 'bear');
-  assert.match(regimeLine(two), /السوق صاعد/);
+  assert.strictEqual(computeRegime(btc([90, 90, 120])).state, 'bear', 'one close above is not enough');
+  const bull = computeRegime(btc([90, 90, 120, 121]));
+  assert.strictEqual(bull.state, 'bull');
+  assert.strictEqual(bull.daysAbove50, 2);
+  assert.ok(bull.sma50 > 0 && bull.sma200 > 0);
+  assert.strictEqual(bull.since, bull.asOf);
+  // ترند صاعد ثم نزلة تحت متوسط 50 وهي فوق متوسط 200
+  assert.strictEqual(computeRegime(btc([400, 400], rising)).state, 'bull');
+  const one = computeRegime(btc([400, 400, 350], rising));
+  assert.strictEqual(one.state, 'bull', 'one close below sma50 does not flip it');
+  const corr = computeRegime(btc([400, 400, 350, 350], rising));
+  assert.strictEqual(corr.state, 'correction');
+  assert.ok(corr.btcClose > corr.sma200 && corr.btcClose < corr.sma50);
+  assert.strictEqual(corr.daysBelow50, 2);
+  assert.match(regimeLine(corr), /^🟡 تصحيح: البتكوين 350 · متوسط 50: [\d,]+ · متوسط 200: [\d,]+$/);
+  assert.strictEqual(computeRegime(btc([400, 400, 350, 350, 380, 381], rising)).state, 'bull');
 });
 
-test('the regime watcher alerts once on a change to bull, and not again the same day', async () => {
+test('the watcher alerts once when the state changes to bull, and not again the same day', async () => {
   const now = Date.UTC(2026, 0, 10, 0, 10);
-  const days = n => { const s = Array.from({ length: 300 }, () => 100); return s.concat(n); };
   const mk = closes => closes.map((c, i, a) => ({ t: Math.floor(now / DAY) * DAY - (a.length - i) * DAY, open: c, high: c, low: c, close: c }));
   S.state().regime = null;
-  S.setMarket({ subscribe() {}, unsubscribe() {}, klines: async () => mk(days([90, 90])) });
+  S.setMarket({ subscribe() {}, unsubscribe() {}, klines: async () => mk([...rising, 400, 400, 350, 350]) });
   await S.updateRegime(now);
-  assert.strictEqual(S.state().regime.state, 'bear');
+  assert.strictEqual(S.state().regime.state, 'correction');
   const before = sent.length;
   S.state().regime.asOfT -= DAY;                          // يوم جديد
-  S.setMarket({ subscribe() {}, unsubscribe() {}, klines: async () => mk(days([90, 90, 120, 121])) });
+  S.setMarket({ subscribe() {}, unsubscribe() {}, klines: async () => mk([...rising, 400, 400, 350, 350, 380, 381]) });
   await S.updateRegime(now);
   assert.strictEqual(S.state().regime.state, 'bull');
   assert.strictEqual(sent.length, before + 1);
-  assert.match(sent.at(-1), /📈 البتكوين قفل يومين فوق متوسط 200 يوم/);
+  assert.match(sent.at(-1), /^📈 البتكوين قفل يومين فوق متوسط 50 يوم وهو فوق متوسط 200 — التصحيح خلص، وقت نرجع الموديلات ونبدأ المسابقة\n/);
   await S.updateRegime(now + 60_000);
   assert.strictEqual(sent.length, before + 1, 'no repeat');
+});
+
+test('a regime saved in the old format (no sma50) is recomputed without a false alert', async () => {
+  const now = Date.UTC(2026, 0, 10, 0, 10);
+  const mk = closes => closes.map((c, i, a) => ({ t: Math.floor(now / DAY) * DAY - (a.length - i) * DAY, open: c, high: c, low: c, close: c }));
+  S.state().regime = { state: 'bull', btcClose: 1, sma200: 1, asOfT: now };   // صيغة قديمة
+  S.setMarket({ subscribe() {}, unsubscribe() {}, klines: async () => mk([...rising, 400, 400, 350, 350]) });
+  const before = sent.length;
+  await S.updateRegime(now);
+  assert.strictEqual(S.state().regime.state, 'correction');
+  assert.ok(S.state().regime.sma50 > 0);
+  assert.strictEqual(sent.length, before, 'no alert from the old format');
 });
 
 test('weekly summary goes out once on Sunday evening (Kuwait) with top 5 and bottom 3', async () => {

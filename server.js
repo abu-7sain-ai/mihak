@@ -17,7 +17,7 @@ const ind = require('./lib/indicators');
 const { createMcpHandler } = require('./lib/mcp');
 const strategies = require('./lib/strategies');
 const strategySpec = require('./lib/strategy-spec');
-const { computeRegime, regimeLine } = require('./lib/regime');
+const { computeRegime, regimeLine, changeMessage } = require('./lib/regime');
 const { createTelegram } = require('./lib/telegram');
 strategies.byId['fable-discovery'] = require('./lib/fable-discovery');   // اكتشاف Fable: من بحثه على 2021–2024، مجمّد
 
@@ -1095,21 +1095,19 @@ async function runCodeBot(def, now) {
 async function updateRegime(now = Date.now()) {
   const day = strategies.DAY;
   const lastStart = Math.floor(now / day) * day - day;
-  if (state.regime && state.regime.asOfT >= lastStart) return state.regime;
-  if (state.regime && now - (lastStart + day) < 5 * 60_000) return state.regime;
+  const current = state.regime?.sma50 != null ? state.regime : null;   // الصيغة القديمة (بدون متوسط 50) تنحسب من جديد
+  if (current && current.asOfT >= lastStart) return state.regime;
+  if (current && now - (lastStart + day) < 5 * 60_000) return state.regime;
   const daily = (await market.klines('BTCUSDT', '1d', 1000)).filter(c => c.t + day <= now);
   const r = computeRegime(daily);
   if (!r) return state.regime;
-  const prev = state.regime?.state;
+  const prev = current?.state;
   state.regime = { ...r, line: regimeLine(r), at: Date.now() };
   dirty = true;
   saveDb();
   if (prev && prev !== r.state) {
-    const nums = `البتكوين ${Math.round(r.btcClose).toLocaleString('en-US')} · متوسط 200 يوم ${Math.round(r.sma200).toLocaleString('en-US')} · ${r.distancePct > 0 ? '+' : ''}${r.distancePct}%`;
     log.ok(`حالة السوق تغيّرت: ${prev} → ${r.state}`);
-    await telegram().sendMessage(r.state === 'bull'
-      ? `📈 البتكوين قفل يومين فوق متوسط 200 يوم — وقت نرجع الموديلات ونبدأ المسابقة\n${nums}`
-      : `📉 البتكوين رجع قفل يومين تحت متوسط 200 يوم — السوق هابط مرة ثانية\n${nums}`);
+    await telegram().sendMessage(changeMessage(r));
   }
   return state.regime;
 }
@@ -1142,7 +1140,7 @@ async function weeklySummary(now = Date.now()) {
 async function announceDeploy() {
   const dep = ENV.RAILWAY_DEPLOYMENT_ID || null;
   if (!dep || !telegram().enabled || state.telegram.lastDeploy === dep) return;
-  const res = await telegram().sendMessage(`المحك متصل ✅\n${regimeLine(state.regime)}${R().aiPaused ? '\n⏸️ الموديلات موقوفة لتوفير التكلفة' : ''}`);
+  const res = await telegram().sendMessage(regimeLine(state.regime));
   if (res.ok) { state.telegram.lastDeploy = dep; dirty = true; saveDb(); log.ok('تيليجرام: رسالة الاتصال وصلت'); }
 }
 
