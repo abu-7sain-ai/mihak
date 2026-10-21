@@ -1,0 +1,3168 @@
+{
+ "generatedAt": "2026-10-21T07:18:13.440Z",
+ "dataEnd": "2026-10-20",
+ "method": "انعكاس 25% (20% عطى أكثر من 20 فترة)",
+ "periods": [
+  {
+   "type": "up1",
+   "name": "صاعد هادي",
+   "startT": 1609459200000,
+   "endT": 1611705600000,
+   "start": "2021-01-01",
+   "end": "2021-01-27",
+   "days": 27,
+   "btcStart": 28924,
+   "btcEnd": 30366,
+   "btcChangePct": 5,
+   "maxDrawdownPct": 25.2,
+   "volatilityPct": 106.5,
+   "avgDistSma200Pct": null,
+   "desc": "صاعد هادي: البتكوين +5% خلال 27 يوم (من 28,924 إلى 30,366)، أكبر نزول 25.2%، تذبذب سنوي 106.5%",
+   "detection": {
+    "expected": "bull",
+    "knownDays": 0,
+    "lagDays": null,
+    "detected": false,
+    "correctDaysPct": null,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": 4.7
+  },
+  {
+   "type": "up2",
+   "name": "صاعد قوي",
+   "startT": 1611792000000,
+   "endT": 1618272000000,
+   "start": "2021-01-28",
+   "end": "2021-04-13",
+   "days": 76,
+   "btcStart": 30366,
+   "btcEnd": 63575,
+   "btcChangePct": 109.4,
+   "maxDrawdownPct": 21.4,
+   "volatilityPct": 79.8,
+   "avgDistSma200Pct": null,
+   "desc": "صاعد قوي: البتكوين +109.4% خلال 76 يوم (من 30,366 إلى 63,575)، أكبر نزول 21.4%، تذبذب سنوي 79.8%",
+   "detection": {
+    "expected": "bull",
+    "knownDays": 0,
+    "lagDays": null,
+    "detected": false,
+    "correctDaysPct": null,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": 108.8
+  },
+  {
+   "type": "down",
+   "name": "هابط",
+   "startT": 1618358400000,
+   "endT": 1628121600000,
+   "start": "2021-04-14",
+   "end": "2021-08-05",
+   "days": 114,
+   "btcStart": 63575,
+   "btcEnd": 40862,
+   "btcChangePct": -35.7,
+   "maxDrawdownPct": 53.1,
+   "volatilityPct": 89.5,
+   "avgDistSma200Pct": -17.1,
+   "desc": "هابط: البتكوين -35.7% خلال 114 يوم (من 63,575 إلى 40,862)، أكبر نزول 53.1%، تذبذب سنوي 89.5%، تحت متوسط 200 بمتوسط 17.1%",
+   "detection": {
+    "expected": "bear",
+    "knownDays": 18,
+    "lagDays": 97,
+    "detected": true,
+    "correctDaysPct": 100,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": -35.9
+  },
+  {
+   "type": "side",
+   "name": "عرضي متذبذب",
+   "startT": 1628208000000,
+   "endT": 1632096000000,
+   "start": "2021-08-06",
+   "end": "2021-09-20",
+   "days": 46,
+   "btcStart": 40862,
+   "btcEnd": 43016,
+   "btcChangePct": 5.3,
+   "maxDrawdownPct": 18.3,
+   "volatilityPct": 68.6,
+   "avgDistSma200Pct": 3.1,
+   "desc": "عرضي متذبذب: البتكوين +5.3% خلال 46 يوم (من 40,862 إلى 43,016)، أكبر نزول 18.3%، تذبذب سنوي 68.6%، فوق متوسط 200 بمتوسط 3.1%",
+   "detection": {
+    "expected": "choppy",
+    "knownDays": 46,
+    "lagDays": null,
+    "detected": false,
+    "correctDaysPct": 0,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": 5
+  },
+  {
+   "type": "up1",
+   "name": "صاعد هادي",
+   "startT": 1632182400000,
+   "endT": 1636329600000,
+   "start": "2021-09-21",
+   "end": "2021-11-08",
+   "days": 49,
+   "btcStart": 43016,
+   "btcEnd": 67526,
+   "btcChangePct": 57,
+   "maxDrawdownPct": 11.5,
+   "volatilityPct": 65.8,
+   "avgDistSma200Pct": 22.8,
+   "desc": "صاعد هادي: البتكوين +57% خلال 49 يوم (من 43,016 إلى 67,526)، أكبر نزول 11.5%، تذبذب سنوي 65.8%، فوق متوسط 200 بمتوسط 22.8%",
+   "detection": {
+    "expected": "bull",
+    "knownDays": 49,
+    "lagDays": 12,
+    "detected": true,
+    "correctDaysPct": 77.6,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": 56.5
+  },
+  {
+   "type": "crash",
+   "name": "انهيار",
+   "startT": 1636416000000,
+   "endT": 1642809600000,
+   "start": "2021-11-09",
+   "end": "2022-01-22",
+   "days": 75,
+   "btcStart": 67526,
+   "btcEnd": 35071,
+   "btcChangePct": -48.1,
+   "maxDrawdownPct": 48.1,
+   "volatilityPct": 61.1,
+   "avgDistSma200Pct": 7.6,
+   "desc": "انهيار: البتكوين -48.1% خلال 75 يوم (من 67,526 إلى 35,071)، أكبر نزول 48.1%، تذبذب سنوي 61.1%، فوق متوسط 200 بمتوسط 7.6%",
+   "detection": {
+    "expected": "bear",
+    "knownDays": 75,
+    "lagDays": 40,
+    "detected": true,
+    "correctDaysPct": 38.7,
+    "wrongFlips": 2
+   },
+   "hodlReturnPct": -48.2
+  },
+  {
+   "type": "up1",
+   "name": "صاعد هادي",
+   "startT": 1642896000000,
+   "endT": 1648512000000,
+   "start": "2022-01-23",
+   "end": "2022-03-29",
+   "days": 66,
+   "btcStart": 35071,
+   "btcEnd": 47435,
+   "btcChangePct": 35.3,
+   "maxDrawdownPct": 16.9,
+   "volatilityPct": 68.1,
+   "avgDistSma200Pct": -16.9,
+   "desc": "صاعد هادي: البتكوين +35.3% خلال 66 يوم (من 35,071 إلى 47,435)، أكبر نزول 16.9%، تذبذب سنوي 68.1%، تحت متوسط 200 بمتوسط 16.9%",
+   "detection": {
+    "expected": "bull",
+    "knownDays": 66,
+    "lagDays": null,
+    "detected": false,
+    "correctDaysPct": 0,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": 34.8
+  },
+  {
+   "type": "down",
+   "name": "هابط",
+   "startT": 1648598400000,
+   "endT": 1655510400000,
+   "start": "2022-03-30",
+   "end": "2022-06-18",
+   "days": 81,
+   "btcStart": 47435,
+   "btcEnd": 18971,
+   "btcChangePct": -60,
+   "maxDrawdownPct": 60,
+   "volatilityPct": 75.1,
+   "avgDistSma200Pct": -24.3,
+   "desc": "هابط: البتكوين -60% خلال 81 يوم (من 47,435 إلى 18,971)، أكبر نزول 60%، تذبذب سنوي 75.1%، تحت متوسط 200 بمتوسط 24.3%",
+   "detection": {
+    "expected": "bear",
+    "knownDays": 81,
+    "lagDays": 1,
+    "detected": true,
+    "correctDaysPct": 100,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": -60.1
+  },
+  {
+   "type": "side",
+   "name": "عرضي متذبذب",
+   "startT": 1655596800000,
+   "endT": 1660608000000,
+   "start": "2022-06-19",
+   "end": "2022-08-16",
+   "days": 59,
+   "btcStart": 18971,
+   "btcEnd": 23855,
+   "btcChangePct": 25.7,
+   "maxDrawdownPct": 10.6,
+   "volatilityPct": 55,
+   "avgDistSma200Pct": -38.3,
+   "desc": "عرضي متذبذب: البتكوين +25.7% خلال 59 يوم (من 18,971 إلى 23,855)، أكبر نزول 10.6%، تذبذب سنوي 55%، تحت متوسط 200 بمتوسط 38.3%",
+   "detection": {
+    "expected": "choppy",
+    "knownDays": 59,
+    "lagDays": 39,
+    "detected": true,
+    "correctDaysPct": 25.4,
+    "wrongFlips": 2
+   },
+   "hodlReturnPct": 25.4
+  },
+  {
+   "type": "down",
+   "name": "هابط",
+   "startT": 1660694400000,
+   "endT": 1668988800000,
+   "start": "2022-08-17",
+   "end": "2022-11-21",
+   "days": 97,
+   "btcStart": 23855,
+   "btcEnd": 15781,
+   "btcChangePct": -33.8,
+   "maxDrawdownPct": 33.8,
+   "volatilityPct": 64.7,
+   "avgDistSma200Pct": -28.7,
+   "desc": "هابط: البتكوين -33.8% خلال 97 يوم (من 23,855 إلى 15,781)، أكبر نزول 33.8%، تذبذب سنوي 64.7%، تحت متوسط 200 بمتوسط 28.7%",
+   "detection": {
+    "expected": "bear",
+    "knownDays": 97,
+    "lagDays": 1,
+    "detected": true,
+    "correctDaysPct": 100,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": -34
+  },
+  {
+   "type": "up2",
+   "name": "صاعد قوي",
+   "startT": 1669075200000,
+   "endT": 1698710400000,
+   "start": "2022-11-22",
+   "end": "2023-10-31",
+   "days": 344,
+   "btcStart": 15781,
+   "btcEnd": 34640,
+   "btcChangePct": 119.5,
+   "maxDrawdownPct": 20,
+   "volatilityPct": 42.3,
+   "avgDistSma200Pct": 10.4,
+   "desc": "صاعد قوي: البتكوين +119.5% خلال 344 يوم (من 15,781 إلى 34,640)، أكبر نزول 20%، تذبذب سنوي 42.3%، فوق متوسط 200 بمتوسط 10.4%",
+   "detection": {
+    "expected": "bull",
+    "knownDays": 344,
+    "lagDays": 53,
+    "detected": true,
+    "correctDaysPct": 46.8,
+    "wrongFlips": 4
+   },
+   "hodlReturnPct": 118.8
+  },
+  {
+   "type": "side",
+   "name": "عرضي متذبذب",
+   "startT": 1698796800000,
+   "endT": 1704067200000,
+   "start": "2023-11-01",
+   "end": "2024-01-01",
+   "days": 62,
+   "btcStart": 34640,
+   "btcEnd": 44180,
+   "btcChangePct": 27.5,
+   "maxDrawdownPct": 6.6,
+   "volatilityPct": 43.5,
+   "avgDistSma200Pct": 32.9,
+   "desc": "عرضي متذبذب: البتكوين +27.5% خلال 62 يوم (من 34,640 إلى 44,180)، أكبر نزول 6.6%، تذبذب سنوي 43.5%، فوق متوسط 200 بمتوسط 32.9%",
+   "detection": {
+    "expected": "choppy",
+    "knownDays": 62,
+    "lagDays": null,
+    "detected": false,
+    "correctDaysPct": 0,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": 27.2
+  },
+  {
+   "type": "up2",
+   "name": "صاعد قوي",
+   "startT": 1704153600000,
+   "endT": 1710288000000,
+   "start": "2024-01-02",
+   "end": "2024-03-13",
+   "days": 72,
+   "btcStart": 44180,
+   "btcEnd": 73072,
+   "btcChangePct": 65.4,
+   "maxDrawdownPct": 15.7,
+   "volatilityPct": 53.4,
+   "avgDistSma200Pct": 42.5,
+   "desc": "صاعد قوي: البتكوين +65.4% خلال 72 يوم (من 44,180 إلى 73,072)، أكبر نزول 15.7%، تذبذب سنوي 53.4%، فوق متوسط 200 بمتوسط 42.5%",
+   "detection": {
+    "expected": "bull",
+    "knownDays": 72,
+    "lagDays": 1,
+    "detected": true,
+    "correctDaysPct": 76.4,
+    "wrongFlips": 2
+   },
+   "hodlReturnPct": 64.9
+  },
+  {
+   "type": "down",
+   "name": "هابط",
+   "startT": 1710374400000,
+   "endT": 1725667200000,
+   "start": "2024-03-14",
+   "end": "2024-09-07",
+   "days": 178,
+   "btcStart": 73072,
+   "btcEnd": 54161,
+   "btcChangePct": -25.9,
+   "maxDrawdownPct": 26.2,
+   "volatilityPct": 55,
+   "avgDistSma200Pct": 20.8,
+   "desc": "هابط: البتكوين -25.9% خلال 178 يوم (من 73,072 إلى 54,161)، أكبر نزول 26.2%، تذبذب سنوي 55%، فوق متوسط 200 بمتوسط 20.8%",
+   "detection": {
+    "expected": "bear",
+    "knownDays": 178,
+    "lagDays": 114,
+    "detected": true,
+    "correctDaysPct": 23,
+    "wrongFlips": 6
+   },
+   "hodlReturnPct": -26.1
+  },
+  {
+   "type": "up1",
+   "name": "صاعد هادي",
+   "startT": 1725753600000,
+   "endT": 1731196800000,
+   "start": "2024-09-08",
+   "end": "2024-11-10",
+   "days": 64,
+   "btcStart": 54161,
+   "btcEnd": 80370,
+   "btcChangePct": 48.4,
+   "maxDrawdownPct": 8.4,
+   "volatilityPct": 41.3,
+   "avgDistSma200Pct": 2.6,
+   "desc": "صاعد هادي: البتكوين +48.4% خلال 64 يوم (من 54,161 إلى 80,370)، أكبر نزول 8.4%، تذبذب سنوي 41.3%، فوق متوسط 200 بمتوسط 2.6%",
+   "detection": {
+    "expected": "bull",
+    "knownDays": 64,
+    "lagDays": 17,
+    "detected": true,
+    "correctDaysPct": 54.7,
+    "wrongFlips": 1
+   },
+   "hodlReturnPct": 47.9
+  },
+  {
+   "type": "side",
+   "name": "عرضي متذبذب",
+   "startT": 1731283200000,
+   "endT": 1741392000000,
+   "start": "2024-11-11",
+   "end": "2025-03-08",
+   "days": 118,
+   "btcStart": 80370,
+   "btcEnd": 86222,
+   "btcChangePct": 7.3,
+   "maxDrawdownPct": 20.6,
+   "volatilityPct": 51,
+   "avgDistSma200Pct": 32.4,
+   "desc": "عرضي متذبذب: البتكوين +7.3% خلال 118 يوم (من 80,370 إلى 86,222)، أكبر نزول 20.6%، تذبذب سنوي 51%، فوق متوسط 200 بمتوسط 32.4%",
+   "detection": {
+    "expected": "choppy",
+    "knownDays": 118,
+    "lagDays": 57,
+    "detected": true,
+    "correctDaysPct": 26.3,
+    "wrongFlips": 1
+   },
+   "hodlReturnPct": 7
+  },
+  {
+   "type": "up1",
+   "name": "صاعد هادي",
+   "startT": 1741478400000,
+   "endT": 1759708800000,
+   "start": "2025-03-09",
+   "end": "2025-10-06",
+   "days": 212,
+   "btcStart": 86222,
+   "btcEnd": 124659,
+   "btcChangePct": 44.6,
+   "maxDrawdownPct": 12.8,
+   "volatilityPct": 37.8,
+   "avgDistSma200Pct": 9.7,
+   "desc": "صاعد هادي: البتكوين +44.6% خلال 212 يوم (من 86,222 إلى 124,659)، أكبر نزول 12.8%، تذبذب سنوي 37.8%، فوق متوسط 200 بمتوسط 9.7%",
+   "detection": {
+    "expected": "bull",
+    "knownDays": 212,
+    "lagDays": 45,
+    "detected": true,
+    "correctDaysPct": 63.7,
+    "wrongFlips": 8
+   },
+   "hodlReturnPct": 44.1
+  },
+  {
+   "type": "corr",
+   "name": "تصحيح",
+   "startT": 1759795200000,
+   "endT": 1762041600000,
+   "start": "2025-10-07",
+   "end": "2025-11-02",
+   "days": 27,
+   "btcStart": 124659,
+   "btcEnd": 110541,
+   "btcChangePct": -11.3,
+   "maxDrawdownPct": 14.6,
+   "volatilityPct": 42.4,
+   "avgDistSma200Pct": 3.8,
+   "desc": "تصحيح: البتكوين -11.3% خلال 27 يوم (من 124,659 إلى 110,541)، أكبر نزول 14.6%، تذبذب سنوي 42.4%، فوق متوسط 200 بمتوسط 3.8%",
+   "detection": {
+    "expected": "correction",
+    "knownDays": 27,
+    "lagDays": 5,
+    "detected": true,
+    "correctDaysPct": 70.4,
+    "wrongFlips": 2
+   },
+   "hodlReturnPct": -11.6
+  },
+  {
+   "type": "down",
+   "name": "هابط",
+   "startT": 1762128000000,
+   "endT": 1770249600000,
+   "start": "2025-11-03",
+   "end": "2026-02-05",
+   "days": 95,
+   "btcStart": 110541,
+   "btcEnd": 62910,
+   "btcChangePct": -43.1,
+   "maxDrawdownPct": 43.1,
+   "volatilityPct": 50.9,
+   "avgDistSma200Pct": -16.1,
+   "desc": "هابط: البتكوين -43.1% خلال 95 يوم (من 110,541 إلى 62,910)، أكبر نزول 43.1%، تذبذب سنوي 50.9%، تحت متوسط 200 بمتوسط 16.1%",
+   "detection": {
+    "expected": "bear",
+    "knownDays": 95,
+    "lagDays": 2,
+    "detected": true,
+    "correctDaysPct": 98.9,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": -43.3
+  },
+  {
+   "type": "up1",
+   "name": "صاعد هادي",
+   "startT": 1770336000000,
+   "endT": 1778371200000,
+   "start": "2026-02-06",
+   "end": "2026-05-10",
+   "days": 94,
+   "btcStart": 62910,
+   "btcEnd": 82210,
+   "btcChangePct": 30.7,
+   "maxDrawdownPct": 11.8,
+   "volatilityPct": 46.8,
+   "avgDistSma200Pct": -21.7,
+   "desc": "صاعد هادي: البتكوين +30.7% خلال 94 يوم (من 62,910 إلى 82,210)، أكبر نزول 11.8%، تذبذب سنوي 46.8%، تحت متوسط 200 بمتوسط 21.7%",
+   "detection": {
+    "expected": "bull",
+    "knownDays": 94,
+    "lagDays": null,
+    "detected": false,
+    "correctDaysPct": 0,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": 30.3
+  },
+  {
+   "type": "down",
+   "name": "هابط",
+   "startT": 1778457600000,
+   "endT": 1782777600000,
+   "start": "2026-05-11",
+   "end": "2026-06-30",
+   "days": 51,
+   "btcStart": 82210,
+   "btcEnd": 58625,
+   "btcChangePct": -28.7,
+   "maxDrawdownPct": 28.7,
+   "volatilityPct": 36.7,
+   "avgDistSma200Pct": -13,
+   "desc": "هابط: البتكوين -28.7% خلال 51 يوم (من 82,210 إلى 58,625)، أكبر نزول 28.7%، تذبذب سنوي 36.7%، تحت متوسط 200 بمتوسط 13%",
+   "detection": {
+    "expected": "bear",
+    "knownDays": 51,
+    "lagDays": 1,
+    "detected": true,
+    "correctDaysPct": 100,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": -28.9
+  },
+  {
+   "type": "up1",
+   "name": "صاعد هادي",
+   "startT": 1782864000000,
+   "endT": 1792454400000,
+   "start": "2026-07-01",
+   "end": "2026-10-20",
+   "days": 112,
+   "btcStart": 58625,
+   "btcEnd": 83028,
+   "btcChangePct": 41.6,
+   "maxDrawdownPct": 6.9,
+   "volatilityPct": 36.1,
+   "avgDistSma200Pct": 3,
+   "desc": "صاعد هادي: البتكوين +41.6% خلال 112 يوم (من 58,625 إلى 83,028)، أكبر نزول 6.9%، تذبذب سنوي 36.1%، فوق متوسط 200 بمتوسط 3%",
+   "detection": {
+    "expected": "bull",
+    "knownDays": 112,
+    "lagDays": 50,
+    "detected": true,
+    "correctDaysPct": 56.3,
+    "wrongFlips": 0
+   },
+   "hodlReturnPct": 41.2
+  }
+ ],
+ "causal": [
+  {
+   "bucket": "none",
+   "days": 199,
+   "start": "2021-01-01",
+   "end": "2021-07-18",
+   "name": "ما فيه حالة (قبل ما يكتمل متوسط 200)"
+  },
+  {
+   "bucket": "bear",
+   "days": 21,
+   "start": "2021-07-19",
+   "end": "2021-08-08",
+   "name": "هابط"
+  },
+  {
+   "bucket": "bull",
+   "days": 9,
+   "start": "2021-08-09",
+   "end": "2021-08-17",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "bear",
+   "days": 1,
+   "start": "2021-08-18",
+   "end": "2021-08-18",
+   "name": "هابط"
+  },
+  {
+   "bucket": "bull",
+   "days": 23,
+   "start": "2021-08-19",
+   "end": "2021-09-10",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "bear",
+   "days": 1,
+   "start": "2021-09-11",
+   "end": "2021-09-11",
+   "name": "هابط"
+  },
+  {
+   "bucket": "bull",
+   "days": 9,
+   "start": "2021-09-12",
+   "end": "2021-09-20",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "bear",
+   "days": 11,
+   "start": "2021-09-21",
+   "end": "2021-10-01",
+   "name": "هابط"
+  },
+  {
+   "bucket": "bull",
+   "days": 48,
+   "start": "2021-10-02",
+   "end": "2021-11-18",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "correction",
+   "days": 29,
+   "start": "2021-11-19",
+   "end": "2021-12-17",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bear",
+   "days": 4,
+   "start": "2021-12-18",
+   "end": "2021-12-21",
+   "name": "هابط"
+  },
+  {
+   "bucket": "correction",
+   "days": 7,
+   "start": "2021-12-22",
+   "end": "2021-12-28",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bear",
+   "days": 65,
+   "start": "2021-12-29",
+   "end": "2022-03-03",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 3,
+   "start": "2022-03-04",
+   "end": "2022-03-06",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bear",
+   "days": 3,
+   "start": "2022-03-07",
+   "end": "2022-03-09",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 19,
+   "start": "2022-03-10",
+   "end": "2022-03-28",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bear",
+   "days": 11,
+   "start": "2022-03-29",
+   "end": "2022-04-08",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 14,
+   "start": "2022-04-09",
+   "end": "2022-04-22",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bear",
+   "days": 95,
+   "start": "2022-04-23",
+   "end": "2022-07-26",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 4,
+   "start": "2022-07-27",
+   "end": "2022-07-30",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bear",
+   "days": 3,
+   "start": "2022-07-31",
+   "end": "2022-08-02",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 11,
+   "start": "2022-08-03",
+   "end": "2022-08-13",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bear",
+   "days": 50,
+   "start": "2022-08-14",
+   "end": "2022-10-02",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 37,
+   "start": "2022-10-03",
+   "end": "2022-11-08",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bear",
+   "days": 43,
+   "start": "2022-11-09",
+   "end": "2022-12-21",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 22,
+   "start": "2022-12-22",
+   "end": "2023-01-12",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 50,
+   "start": "2023-01-13",
+   "end": "2023-03-03",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "correction",
+   "days": 10,
+   "start": "2023-03-04",
+   "end": "2023-03-13",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bull",
+   "days": 52,
+   "start": "2023-03-14",
+   "end": "2023-05-04",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "choppy",
+   "days": 9,
+   "start": "2023-05-05",
+   "end": "2023-05-13",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "correction",
+   "days": 21,
+   "start": "2023-05-14",
+   "end": "2023-06-03",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "choppy",
+   "days": 3,
+   "start": "2023-06-04",
+   "end": "2023-06-06",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "correction",
+   "days": 14,
+   "start": "2023-06-07",
+   "end": "2023-06-20",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bull",
+   "days": 40,
+   "start": "2023-06-21",
+   "end": "2023-07-30",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "choppy",
+   "days": 20,
+   "start": "2023-07-31",
+   "end": "2023-08-19",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bear",
+   "days": 28,
+   "start": "2023-08-20",
+   "end": "2023-09-16",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 18,
+   "start": "2023-09-17",
+   "end": "2023-10-04",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bear",
+   "days": 10,
+   "start": "2023-10-05",
+   "end": "2023-10-14",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 2,
+   "start": "2023-10-15",
+   "end": "2023-10-16",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 81,
+   "start": "2023-10-17",
+   "end": "2024-01-05",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "choppy",
+   "days": 18,
+   "start": "2024-01-06",
+   "end": "2024-01-23",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "correction",
+   "days": 6,
+   "start": "2024-01-24",
+   "end": "2024-01-29",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "choppy",
+   "days": 14,
+   "start": "2024-01-30",
+   "end": "2024-02-12",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 53,
+   "start": "2024-02-13",
+   "end": "2024-04-05",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "choppy",
+   "days": 12,
+   "start": "2024-04-06",
+   "end": "2024-04-17",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "correction",
+   "days": 27,
+   "start": "2024-04-18",
+   "end": "2024-05-14",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "choppy",
+   "days": 4,
+   "start": "2024-05-15",
+   "end": "2024-05-18",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 13,
+   "start": "2024-05-19",
+   "end": "2024-05-31",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "choppy",
+   "days": 4,
+   "start": "2024-06-01",
+   "end": "2024-06-04",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 8,
+   "start": "2024-06-05",
+   "end": "2024-06-12",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "choppy",
+   "days": 9,
+   "start": "2024-06-13",
+   "end": "2024-06-21",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "correction",
+   "days": 13,
+   "start": "2024-06-22",
+   "end": "2024-07-04",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bear",
+   "days": 9,
+   "start": "2024-07-05",
+   "end": "2024-07-13",
+   "name": "هابط"
+  },
+  {
+   "bucket": "correction",
+   "days": 2,
+   "start": "2024-07-14",
+   "end": "2024-07-15",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bull",
+   "days": 19,
+   "start": "2024-07-16",
+   "end": "2024-08-03",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "bear",
+   "days": 20,
+   "start": "2024-08-04",
+   "end": "2024-08-23",
+   "name": "هابط"
+  },
+  {
+   "bucket": "bull",
+   "days": 3,
+   "start": "2024-08-24",
+   "end": "2024-08-26",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "bear",
+   "days": 3,
+   "start": "2024-08-27",
+   "end": "2024-08-29",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 3,
+   "start": "2024-08-30",
+   "end": "2024-09-01",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bear",
+   "days": 14,
+   "start": "2024-09-02",
+   "end": "2024-09-15",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 11,
+   "start": "2024-09-16",
+   "end": "2024-09-26",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 4,
+   "start": "2024-09-27",
+   "end": "2024-09-30",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "bear",
+   "days": 5,
+   "start": "2024-10-01",
+   "end": "2024-10-05",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 15,
+   "start": "2024-10-06",
+   "end": "2024-10-20",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 5,
+   "start": "2024-10-21",
+   "end": "2024-10-25",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "choppy",
+   "days": 4,
+   "start": "2024-10-26",
+   "end": "2024-10-29",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 59,
+   "start": "2024-10-30",
+   "end": "2024-12-27",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "correction",
+   "days": 6,
+   "start": "2024-12-28",
+   "end": "2025-01-02",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bull",
+   "days": 3,
+   "start": "2025-01-03",
+   "end": "2025-01-05",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "choppy",
+   "days": 31,
+   "start": "2025-01-06",
+   "end": "2025-02-05",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "correction",
+   "days": 32,
+   "start": "2025-02-06",
+   "end": "2025-03-09",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bear",
+   "days": 5,
+   "start": "2025-03-10",
+   "end": "2025-03-14",
+   "name": "هابط"
+  },
+  {
+   "bucket": "correction",
+   "days": 2,
+   "start": "2025-03-15",
+   "end": "2025-03-16",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bear",
+   "days": 7,
+   "start": "2025-03-17",
+   "end": "2025-03-23",
+   "name": "هابط"
+  },
+  {
+   "bucket": "correction",
+   "days": 5,
+   "start": "2025-03-24",
+   "end": "2025-03-28",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bear",
+   "days": 6,
+   "start": "2025-03-29",
+   "end": "2025-04-03",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 22,
+   "start": "2025-04-04",
+   "end": "2025-04-25",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 40,
+   "start": "2025-04-26",
+   "end": "2025-06-04",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "choppy",
+   "days": 39,
+   "start": "2025-06-05",
+   "end": "2025-07-13",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 24,
+   "start": "2025-07-14",
+   "end": "2025-08-06",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "choppy",
+   "days": 7,
+   "start": "2025-08-07",
+   "end": "2025-08-13",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 6,
+   "start": "2025-08-14",
+   "end": "2025-08-19",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "correction",
+   "days": 1,
+   "start": "2025-08-20",
+   "end": "2025-08-20",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "choppy",
+   "days": 43,
+   "start": "2025-08-21",
+   "end": "2025-10-02",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 8,
+   "start": "2025-10-03",
+   "end": "2025-10-10",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "correction",
+   "days": 2,
+   "start": "2025-10-11",
+   "end": "2025-10-12",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bull",
+   "days": 2,
+   "start": "2025-10-13",
+   "end": "2025-10-14",
+   "name": "صاعد"
+  },
+  {
+   "bucket": "correction",
+   "days": 3,
+   "start": "2025-10-15",
+   "end": "2025-10-17",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bear",
+   "days": 2,
+   "start": "2025-10-18",
+   "end": "2025-10-19",
+   "name": "هابط"
+  },
+  {
+   "bucket": "correction",
+   "days": 15,
+   "start": "2025-10-20",
+   "end": "2025-11-03",
+   "name": "تصحيح"
+  },
+  {
+   "bucket": "bear",
+   "days": 55,
+   "start": "2025-11-04",
+   "end": "2025-12-28",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 8,
+   "start": "2025-12-29",
+   "end": "2026-01-05",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bear",
+   "days": 77,
+   "start": "2026-01-06",
+   "end": "2026-03-23",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 30,
+   "start": "2026-03-24",
+   "end": "2026-04-22",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bear",
+   "days": 32,
+   "start": "2026-04-23",
+   "end": "2026-05-24",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 3,
+   "start": "2026-05-25",
+   "end": "2026-05-27",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bear",
+   "days": 72,
+   "start": "2026-05-28",
+   "end": "2026-08-07",
+   "name": "هابط"
+  },
+  {
+   "bucket": "choppy",
+   "days": 13,
+   "start": "2026-08-08",
+   "end": "2026-08-20",
+   "name": "متذبذب"
+  },
+  {
+   "bucket": "bull",
+   "days": 61,
+   "start": "2026-08-21",
+   "end": "2026-10-20",
+   "name": "صاعد"
+  }
+ ],
+ "matrix": {
+  "code-breakout-btc": [
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 19,
+    "trades": 36,
+    "pf": 2.18,
+    "maxDDPct": 14.8
+   },
+   {
+    "returnPct": -0.1,
+    "trades": 47,
+    "pf": 0.99,
+    "maxDDPct": 9.3
+   },
+   {
+    "returnPct": -18.6,
+    "trades": 37,
+    "pf": 0.08,
+    "maxDDPct": 20
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0.6,
+    "trades": 168,
+    "pf": 1.01,
+    "maxDDPct": 27.7
+   },
+   {
+    "returnPct": 19.8,
+    "trades": 79,
+    "pf": 1.72,
+    "maxDDPct": 18
+   },
+   {
+    "returnPct": 17.4,
+    "trades": 61,
+    "pf": 1.8,
+    "maxDDPct": 13.2
+   },
+   {
+    "returnPct": -22,
+    "trades": 95,
+    "pf": 0.39,
+    "maxDDPct": 22
+   },
+   {
+    "returnPct": 7.2,
+    "trades": 43,
+    "pf": 1.77,
+    "maxDDPct": 11.4
+   },
+   {
+    "returnPct": 40.3,
+    "trades": 92,
+    "pf": 1.81,
+    "maxDDPct": 22.5
+   },
+   {
+    "returnPct": 9,
+    "trades": 161,
+    "pf": 1.19,
+    "maxDDPct": 22.7
+   },
+   {
+    "returnPct": -2.8,
+    "trades": 6,
+    "pf": 0,
+    "maxDDPct": 3.3
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 19.3,
+    "trades": 54,
+    "pf": 2.39,
+    "maxDDPct": 10.8
+   }
+  ],
+  "code-breakout-nobtc": [
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 128.5,
+    "trades": 66,
+    "pf": 6.39,
+    "maxDDPct": 13.2
+   },
+   {
+    "returnPct": 1.6,
+    "trades": 55,
+    "pf": 1.05,
+    "maxDDPct": 22.7
+   },
+   {
+    "returnPct": 46.5,
+    "trades": 37,
+    "pf": 3.88,
+    "maxDDPct": 11.4
+   },
+   {
+    "returnPct": -0.1,
+    "trades": 48,
+    "pf": 0.99,
+    "maxDDPct": 9.6
+   },
+   {
+    "returnPct": -22.1,
+    "trades": 44,
+    "pf": 0.08,
+    "maxDDPct": 23.4
+   },
+   {
+    "returnPct": 2.9,
+    "trades": 33,
+    "pf": 1.31,
+    "maxDDPct": 11.8
+   },
+   {
+    "returnPct": -10.7,
+    "trades": 19,
+    "pf": 0.07,
+    "maxDDPct": 10.7
+   },
+   {
+    "returnPct": -7.7,
+    "trades": 38,
+    "pf": 0.39,
+    "maxDDPct": 10.9
+   },
+   {
+    "returnPct": -17.6,
+    "trades": 51,
+    "pf": 0.16,
+    "maxDDPct": 17.7
+   },
+   {
+    "returnPct": 20.6,
+    "trades": 204,
+    "pf": 1.35,
+    "maxDDPct": 25.5
+   },
+   {
+    "returnPct": 19.8,
+    "trades": 79,
+    "pf": 1.72,
+    "maxDDPct": 18
+   },
+   {
+    "returnPct": 17.4,
+    "trades": 61,
+    "pf": 1.8,
+    "maxDDPct": 13.2
+   },
+   {
+    "returnPct": -12.1,
+    "trades": 97,
+    "pf": 0.6,
+    "maxDDPct": 13
+   },
+   {
+    "returnPct": 15.2,
+    "trades": 70,
+    "pf": 1.97,
+    "maxDDPct": 13.1
+   },
+   {
+    "returnPct": 40.3,
+    "trades": 92,
+    "pf": 1.81,
+    "maxDDPct": 22.5
+   },
+   {
+    "returnPct": 8.4,
+    "trades": 170,
+    "pf": 1.17,
+    "maxDDPct": 22.9
+   },
+   {
+    "returnPct": -2.8,
+    "trades": 6,
+    "pf": 0,
+    "maxDDPct": 3.3
+   },
+   {
+    "returnPct": -4.5,
+    "trades": 28,
+    "pf": 0.41,
+    "maxDDPct": 5.6
+   },
+   {
+    "returnPct": -7.4,
+    "trades": 61,
+    "pf": 0.53,
+    "maxDDPct": 15
+   },
+   {
+    "returnPct": -5.6,
+    "trades": 21,
+    "pf": 0.28,
+    "maxDDPct": 5.6
+   },
+   {
+    "returnPct": 17.5,
+    "trades": 87,
+    "pf": 1.78,
+    "maxDDPct": 11
+   }
+  ],
+  "code-rotation": [
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 6.9,
+    "trades": 4,
+    "pf": null,
+    "maxDDPct": 1.3
+   },
+   {
+    "returnPct": 22.4,
+    "trades": 9,
+    "pf": 3.95,
+    "maxDDPct": 13.7
+   },
+   {
+    "returnPct": 6.4,
+    "trades": 12,
+    "pf": 4.17,
+    "maxDDPct": 5.2
+   },
+   {
+    "returnPct": -17.8,
+    "trades": 14,
+    "pf": 0.04,
+    "maxDDPct": 18.2
+   },
+   {
+    "returnPct": 1.9,
+    "trades": 2,
+    "pf": null,
+    "maxDDPct": 3.6
+   },
+   {
+    "returnPct": -5.5,
+    "trades": 4,
+    "pf": 0,
+    "maxDDPct": 5.5
+   },
+   {
+    "returnPct": 0,
+    "trades": 2,
+    "pf": 0.8,
+    "maxDDPct": 0.5
+   },
+   {
+    "returnPct": -7.9,
+    "trades": 7,
+    "pf": 0,
+    "maxDDPct": 7.9
+   },
+   {
+    "returnPct": 4.8,
+    "trades": 54,
+    "pf": 1.17,
+    "maxDDPct": 13.5
+   },
+   {
+    "returnPct": 19.5,
+    "trades": 12,
+    "pf": 6.24,
+    "maxDDPct": 6.2
+   },
+   {
+    "returnPct": 17.9,
+    "trades": 14,
+    "pf": 8.24,
+    "maxDDPct": 5
+   },
+   {
+    "returnPct": -8.4,
+    "trades": 25,
+    "pf": 0.46,
+    "maxDDPct": 14.6
+   },
+   {
+    "returnPct": 10,
+    "trades": 11,
+    "pf": 3.14,
+    "maxDDPct": 5.6
+   },
+   {
+    "returnPct": 13.8,
+    "trades": 27,
+    "pf": 1.73,
+    "maxDDPct": 19
+   },
+   {
+    "returnPct": 8.9,
+    "trades": 29,
+    "pf": 2.15,
+    "maxDDPct": 5.1
+   },
+   {
+    "returnPct": -3.6,
+    "trades": 5,
+    "pf": 0,
+    "maxDDPct": 4
+   },
+   {
+    "returnPct": -6.3,
+    "trades": 7,
+    "pf": 0,
+    "maxDDPct": 6.5
+   },
+   {
+    "returnPct": -0.3,
+    "trades": 2,
+    "pf": 0.83,
+    "maxDDPct": 1.7
+   },
+   {
+    "returnPct": -5.7,
+    "trades": 4,
+    "pf": 0,
+    "maxDDPct": 6.2
+   },
+   {
+    "returnPct": -6.2,
+    "trades": 19,
+    "pf": 0.5,
+    "maxDDPct": 8.4
+   }
+  ],
+  "code-pullback": [
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": -13.6,
+    "trades": 167,
+    "pf": 0.66,
+    "maxDDPct": 20.9
+   },
+   {
+    "returnPct": 1,
+    "trades": 137,
+    "pf": 1.04,
+    "maxDDPct": 8.9
+   },
+   {
+    "returnPct": 0.2,
+    "trades": 122,
+    "pf": 1.01,
+    "maxDDPct": 11.4
+   },
+   {
+    "returnPct": 8.9,
+    "trades": 141,
+    "pf": 1.98,
+    "maxDDPct": 5.1
+   },
+   {
+    "returnPct": -3.5,
+    "trades": 71,
+    "pf": 0.75,
+    "maxDDPct": 9.1
+   },
+   {
+    "returnPct": 0.6,
+    "trades": 43,
+    "pf": 1.15,
+    "maxDDPct": 2.7
+   },
+   {
+    "returnPct": -5.6,
+    "trades": 56,
+    "pf": 0.48,
+    "maxDDPct": 8.3
+   },
+   {
+    "returnPct": -0.7,
+    "trades": 84,
+    "pf": 0.91,
+    "maxDDPct": 4.4
+   },
+   {
+    "returnPct": -11.8,
+    "trades": 94,
+    "pf": 0.31,
+    "maxDDPct": 12.1
+   },
+   {
+    "returnPct": -11.3,
+    "trades": 497,
+    "pf": 0.74,
+    "maxDDPct": 18.4
+   },
+   {
+    "returnPct": 7.3,
+    "trades": 201,
+    "pf": 1.45,
+    "maxDDPct": 6.4
+   },
+   {
+    "returnPct": 9.6,
+    "trades": 195,
+    "pf": 1.51,
+    "maxDDPct": 9.3
+   },
+   {
+    "returnPct": -7.9,
+    "trades": 241,
+    "pf": 0.71,
+    "maxDDPct": 9.6
+   },
+   {
+    "returnPct": -5.2,
+    "trades": 147,
+    "pf": 0.67,
+    "maxDDPct": 8.3
+   },
+   {
+    "returnPct": 5.1,
+    "trades": 249,
+    "pf": 1.14,
+    "maxDDPct": 11.6
+   },
+   {
+    "returnPct": -2.9,
+    "trades": 442,
+    "pf": 0.93,
+    "maxDDPct": 8.9
+   },
+   {
+    "returnPct": -3.4,
+    "trades": 21,
+    "pf": 0.16,
+    "maxDDPct": 3.7
+   },
+   {
+    "returnPct": -3.5,
+    "trades": 61,
+    "pf": 0.39,
+    "maxDDPct": 4
+   },
+   {
+    "returnPct": 0.2,
+    "trades": 83,
+    "pf": 1.04,
+    "maxDDPct": 2.5
+   },
+   {
+    "returnPct": -3.5,
+    "trades": 54,
+    "pf": 0.53,
+    "maxDDPct": 4.5
+   },
+   {
+    "returnPct": -10.7,
+    "trades": 235,
+    "pf": 0.55,
+    "maxDDPct": 10.9
+   }
+  ],
+  "code-bollinger": [
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": -0.5,
+    "trades": 50,
+    "pf": 0.96,
+    "maxDDPct": 6.8
+   },
+   {
+    "returnPct": 13.3,
+    "trades": 56,
+    "pf": 3.92,
+    "maxDDPct": 2.8
+   },
+   {
+    "returnPct": -7.6,
+    "trades": 96,
+    "pf": 0.74,
+    "maxDDPct": 13.8
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": -7.5,
+    "trades": 425,
+    "pf": 0.9,
+    "maxDDPct": 19.3
+   },
+   {
+    "returnPct": 19,
+    "trades": 90,
+    "pf": 4.8,
+    "maxDDPct": 2.5
+   },
+   {
+    "returnPct": 8.8,
+    "trades": 110,
+    "pf": 1.43,
+    "maxDDPct": 12.4
+   },
+   {
+    "returnPct": -40.3,
+    "trades": 291,
+    "pf": 0.53,
+    "maxDDPct": 41.4
+   },
+   {
+    "returnPct": -4.9,
+    "trades": 59,
+    "pf": 0.63,
+    "maxDDPct": 10.1
+   },
+   {
+    "returnPct": 18.6,
+    "trades": 217,
+    "pf": 1.31,
+    "maxDDPct": 13.9
+   },
+   {
+    "returnPct": -8.3,
+    "trades": 282,
+    "pf": 0.86,
+    "maxDDPct": 16.7
+   },
+   {
+    "returnPct": 0.6,
+    "trades": 59,
+    "pf": 1.05,
+    "maxDDPct": 8.4
+   },
+   {
+    "returnPct": -6,
+    "trades": 10,
+    "pf": 0,
+    "maxDDPct": 6
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 2,
+    "trades": 119,
+    "pf": 1.12,
+    "maxDDPct": 8.9
+   }
+  ],
+  "code-dca": [
+   {
+    "returnPct": -2.3,
+    "trades": 8,
+    "pf": null,
+    "maxDDPct": 6.6
+   },
+   {
+    "returnPct": 17.4,
+    "trades": 22,
+    "pf": null,
+    "maxDDPct": 7
+   },
+   {
+    "returnPct": 9.6,
+    "trades": 32,
+    "pf": null,
+    "maxDDPct": 21.9
+   },
+   {
+    "returnPct": -5.2,
+    "trades": 14,
+    "pf": null,
+    "maxDDPct": 9.6
+   },
+   {
+    "returnPct": 16.5,
+    "trades": 14,
+    "pf": null,
+    "maxDDPct": 3.9
+   },
+   {
+    "returnPct": -30,
+    "trades": 20,
+    "pf": null,
+    "maxDDPct": 30
+   },
+   {
+    "returnPct": 20.7,
+    "trades": 20,
+    "pf": null,
+    "maxDDPct": 9.8
+   },
+   {
+    "returnPct": -43.5,
+    "trades": 22,
+    "pf": null,
+    "maxDDPct": 43.5
+   },
+   {
+    "returnPct": 22.1,
+    "trades": 18,
+    "pf": null,
+    "maxDDPct": 5.7
+   },
+   {
+    "returnPct": -16.6,
+    "trades": 28,
+    "pf": null,
+    "maxDDPct": 22.9
+   },
+   {
+    "returnPct": 20.7,
+    "trades": 98,
+    "pf": null,
+    "maxDDPct": 13.1
+   },
+   {
+    "returnPct": 5.4,
+    "trades": 18,
+    "pf": null,
+    "maxDDPct": 2.4
+   },
+   {
+    "returnPct": 36.4,
+    "trades": 20,
+    "pf": null,
+    "maxDDPct": 3.2
+   },
+   {
+    "returnPct": -16.7,
+    "trades": 50,
+    "pf": null,
+    "maxDDPct": 21.2
+   },
+   {
+    "returnPct": 19.4,
+    "trades": 18,
+    "pf": null,
+    "maxDDPct": 5.1
+   },
+   {
+    "returnPct": -15.1,
+    "trades": 34,
+    "pf": null,
+    "maxDDPct": 17.6
+   },
+   {
+    "returnPct": 40.4,
+    "trades": 62,
+    "pf": null,
+    "maxDDPct": 11.1
+   },
+   {
+    "returnPct": -2.9,
+    "trades": 6,
+    "pf": null,
+    "maxDDPct": 6.1
+   },
+   {
+    "returnPct": -31.5,
+    "trades": 28,
+    "pf": null,
+    "maxDDPct": 34.1
+   },
+   {
+    "returnPct": 12.5,
+    "trades": 26,
+    "pf": null,
+    "maxDDPct": 6.5
+   },
+   {
+    "returnPct": -12.7,
+    "trades": 16,
+    "pf": null,
+    "maxDDPct": 12.7
+   },
+   {
+    "returnPct": 8.3,
+    "trades": 32,
+    "pf": null,
+    "maxDDPct": 5.4
+   }
+  ],
+  "strat-fable": [
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 3.6,
+    "trades": 59,
+    "pf": 1.17,
+    "maxDDPct": 8.1
+   },
+   {
+    "returnPct": -4.8,
+    "trades": 72,
+    "pf": 0.75,
+    "maxDDPct": 11.9
+   },
+   {
+    "returnPct": -9.3,
+    "trades": 51,
+    "pf": 0.36,
+    "maxDDPct": 11.8
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": -1.9,
+    "trades": 280,
+    "pf": 0.97,
+    "maxDDPct": 24.1
+   },
+   {
+    "returnPct": 14.2,
+    "trades": 107,
+    "pf": 1.56,
+    "maxDDPct": 10.5
+   },
+   {
+    "returnPct": -1.5,
+    "trades": 131,
+    "pf": 0.96,
+    "maxDDPct": 9.8
+   },
+   {
+    "returnPct": -14,
+    "trades": 165,
+    "pf": 0.64,
+    "maxDDPct": 14
+   },
+   {
+    "returnPct": 14.8,
+    "trades": 51,
+    "pf": 3.04,
+    "maxDDPct": 6.5
+   },
+   {
+    "returnPct": 30.6,
+    "trades": 158,
+    "pf": 1.67,
+    "maxDDPct": 10.1
+   },
+   {
+    "returnPct": 11.1,
+    "trades": 248,
+    "pf": 1.24,
+    "maxDDPct": 20.4
+   },
+   {
+    "returnPct": -1.3,
+    "trades": 18,
+    "pf": 0.46,
+    "maxDDPct": 1.8
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 10.2,
+    "trades": 82,
+    "pf": 1.63,
+    "maxDDPct": 9.1
+   }
+  ],
+  "strat-gpt": [
+   {
+    "returnPct": -12.1,
+    "trades": 28,
+    "pf": 0.13,
+    "maxDDPct": 13.2
+   },
+   {
+    "returnPct": 55.5,
+    "trades": 145,
+    "pf": 2.29,
+    "maxDDPct": 14.6
+   },
+   {
+    "returnPct": -18.3,
+    "trades": 128,
+    "pf": 0.64,
+    "maxDDPct": 30.4
+   },
+   {
+    "returnPct": 32.9,
+    "trades": 77,
+    "pf": 2.83,
+    "maxDDPct": 6.4
+   },
+   {
+    "returnPct": 0.1,
+    "trades": 90,
+    "pf": 1,
+    "maxDDPct": 11.7
+   },
+   {
+    "returnPct": -13.8,
+    "trades": 62,
+    "pf": 0.32,
+    "maxDDPct": 13.8
+   },
+   {
+    "returnPct": -1.5,
+    "trades": 58,
+    "pf": 0.9,
+    "maxDDPct": 13.8
+   },
+   {
+    "returnPct": -10.9,
+    "trades": 47,
+    "pf": 0.08,
+    "maxDDPct": 12.8
+   },
+   {
+    "returnPct": 1,
+    "trades": 74,
+    "pf": 1.07,
+    "maxDDPct": 7.7
+   },
+   {
+    "returnPct": -3.6,
+    "trades": 86,
+    "pf": 0.79,
+    "maxDDPct": 7
+   },
+   {
+    "returnPct": -13.9,
+    "trades": 410,
+    "pf": 0.82,
+    "maxDDPct": 24.7
+   },
+   {
+    "returnPct": 32.7,
+    "trades": 153,
+    "pf": 2.11,
+    "maxDDPct": 6.4
+   },
+   {
+    "returnPct": 5.1,
+    "trades": 116,
+    "pf": 1.19,
+    "maxDDPct": 6.5
+   },
+   {
+    "returnPct": -29.1,
+    "trades": 183,
+    "pf": 0.4,
+    "maxDDPct": 29.7
+   },
+   {
+    "returnPct": 18.4,
+    "trades": 93,
+    "pf": 2.24,
+    "maxDDPct": 6.8
+   },
+   {
+    "returnPct": 26.1,
+    "trades": 169,
+    "pf": 1.59,
+    "maxDDPct": 17
+   },
+   {
+    "returnPct": 6.2,
+    "trades": 330,
+    "pf": 1.09,
+    "maxDDPct": 16.3
+   },
+   {
+    "returnPct": -5.9,
+    "trades": 23,
+    "pf": 0.07,
+    "maxDDPct": 5.9
+   },
+   {
+    "returnPct": -10.4,
+    "trades": 77,
+    "pf": 0.34,
+    "maxDDPct": 10.4
+   },
+   {
+    "returnPct": -1.9,
+    "trades": 140,
+    "pf": 0.9,
+    "maxDDPct": 12.7
+   },
+   {
+    "returnPct": -6.6,
+    "trades": 42,
+    "pf": 0.49,
+    "maxDDPct": 6.9
+   },
+   {
+    "returnPct": -7.3,
+    "trades": 170,
+    "pf": 0.77,
+    "maxDDPct": 12.5
+   }
+  ],
+  "strat-qwen": [
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 15.8,
+    "trades": 64,
+    "pf": 1.91,
+    "maxDDPct": 6.6
+   },
+   {
+    "returnPct": 11.9,
+    "trades": 67,
+    "pf": 1.97,
+    "maxDDPct": 5.6
+   },
+   {
+    "returnPct": -12.2,
+    "trades": 33,
+    "pf": 0.15,
+    "maxDDPct": 12.2
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": -6,
+    "trades": 259,
+    "pf": 0.89,
+    "maxDDPct": 24.7
+   },
+   {
+    "returnPct": 19.5,
+    "trades": 139,
+    "pf": 1.63,
+    "maxDDPct": 9.9
+   },
+   {
+    "returnPct": 5.9,
+    "trades": 118,
+    "pf": 1.18,
+    "maxDDPct": 9.8
+   },
+   {
+    "returnPct": -14.6,
+    "trades": 131,
+    "pf": 0.61,
+    "maxDDPct": 15.3
+   },
+   {
+    "returnPct": 2.4,
+    "trades": 51,
+    "pf": 1.26,
+    "maxDDPct": 6.8
+   },
+   {
+    "returnPct": 17.2,
+    "trades": 131,
+    "pf": 1.34,
+    "maxDDPct": 20.2
+   },
+   {
+    "returnPct": -3.2,
+    "trades": 256,
+    "pf": 0.95,
+    "maxDDPct": 19.1
+   },
+   {
+    "returnPct": -2.8,
+    "trades": 7,
+    "pf": 0.13,
+    "maxDDPct": 3.3
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0.6,
+    "trades": 106,
+    "pf": 1.03,
+    "maxDDPct": 11.1
+   }
+  ],
+  "strat-deepseek": [
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 18.5,
+    "trades": 51,
+    "pf": 2.31,
+    "maxDDPct": 6.6
+   },
+   {
+    "returnPct": 6.4,
+    "trades": 49,
+    "pf": 1.64,
+    "maxDDPct": 6
+   },
+   {
+    "returnPct": -7.6,
+    "trades": 21,
+    "pf": 0.08,
+    "maxDDPct": 7.6
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 6.8,
+    "trades": 189,
+    "pf": 1.18,
+    "maxDDPct": 17
+   },
+   {
+    "returnPct": 15.2,
+    "trades": 99,
+    "pf": 1.59,
+    "maxDDPct": 7.3
+   },
+   {
+    "returnPct": 8.1,
+    "trades": 97,
+    "pf": 1.3,
+    "maxDDPct": 7
+   },
+   {
+    "returnPct": -12.8,
+    "trades": 94,
+    "pf": 0.55,
+    "maxDDPct": 15.1
+   },
+   {
+    "returnPct": -1.4,
+    "trades": 32,
+    "pf": 0.79,
+    "maxDDPct": 4.8
+   },
+   {
+    "returnPct": 13.9,
+    "trades": 96,
+    "pf": 1.41,
+    "maxDDPct": 15.9
+   },
+   {
+    "returnPct": -7.3,
+    "trades": 189,
+    "pf": 0.83,
+    "maxDDPct": 14.7
+   },
+   {
+    "returnPct": -1.8,
+    "trades": 6,
+    "pf": 0.18,
+    "maxDDPct": 2.4
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": -0.7,
+    "trades": 72,
+    "pf": 0.96,
+    "maxDDPct": 6.6
+   }
+  ],
+  "fable-discovery": [
+   {
+    "returnPct": 0,
+    "trades": 0,
+    "pf": null,
+    "maxDDPct": 0
+   },
+   {
+    "returnPct": 74.3,
+    "trades": 140,
+    "pf": 3.62,
+    "maxDDPct": 20.5
+   },
+   {
+    "returnPct": -15.2,
+    "trades": 45,
+    "pf": 0.21,
+    "maxDDPct": 20.6
+   },
+   {
+    "returnPct": 30.8,
+    "trades": 88,
+    "pf": 2.77,
+    "maxDDPct": 13.2
+   },
+   {
+    "returnPct": 9.7,
+    "trades": 87,
+    "pf": 1.71,
+    "maxDDPct": 7.5
+   },
+   {
+    "returnPct": -8.1,
+    "trades": 23,
+    "pf": 0.02,
+    "maxDDPct": 8.1
+   },
+   {
+    "returnPct": 6.7,
+    "trades": 18,
+    "pf": 3.62,
+    "maxDDPct": 2.8
+   },
+   {
+    "returnPct": -5.8,
+    "trades": 19,
+    "pf": 0.03,
+    "maxDDPct": 6.3
+   },
+   {
+    "returnPct": -6.1,
+    "trades": 50,
+    "pf": 0.49,
+    "maxDDPct": 8.6
+   },
+   {
+    "returnPct": -6.9,
+    "trades": 31,
+    "pf": 0.1,
+    "maxDDPct": 8.6
+   },
+   {
+    "returnPct": -1.1,
+    "trades": 316,
+    "pf": 0.98,
+    "maxDDPct": 23.2
+   },
+   {
+    "returnPct": 38.1,
+    "trades": 158,
+    "pf": 2.62,
+    "maxDDPct": 11.2
+   },
+   {
+    "returnPct": 29.7,
+    "trades": 98,
+    "pf": 3.01,
+    "maxDDPct": 11.1
+   },
+   {
+    "returnPct": -29.2,
+    "trades": 168,
+    "pf": 0.18,
+    "maxDDPct": 29.2
+   },
+   {
+    "returnPct": 1.1,
+    "trades": 87,
+    "pf": 1.09,
+    "maxDDPct": 10.2
+   },
+   {
+    "returnPct": 16.4,
+    "trades": 152,
+    "pf": 1.44,
+    "maxDDPct": 24
+   },
+   {
+    "returnPct": -8.4,
+    "trades": 282,
+    "pf": 0.81,
+    "maxDDPct": 21
+   },
+   {
+    "returnPct": -4,
+    "trades": 12,
+    "pf": 0,
+    "maxDDPct": 4
+   },
+   {
+    "returnPct": -5,
+    "trades": 30,
+    "pf": 0.23,
+    "maxDDPct": 6.1
+   },
+   {
+    "returnPct": 5.9,
+    "trades": 60,
+    "pf": 1.98,
+    "maxDDPct": 5.7
+   },
+   {
+    "returnPct": -5.1,
+    "trades": 20,
+    "pf": 0.05,
+    "maxDDPct": 5.2
+   },
+   {
+    "returnPct": 2.2,
+    "trades": 163,
+    "pf": 1.1,
+    "maxDDPct": 12
+   }
+  ]
+ },
+ "byType": {
+  "up1": {
+   "name": "صاعد هادي",
+   "periods": 7,
+   "hodlAvgPct": 37.1,
+   "ranking": [
+    {
+     "id": "code-dca",
+     "avgReturnPct": 16.5,
+     "positive": 6,
+     "of": 7
+    },
+    {
+     "id": "code-breakout-nobtc",
+     "avgReturnPct": 5.2,
+     "positive": 4,
+     "of": 7
+    },
+    {
+     "id": "code-breakout-btc",
+     "avgReturnPct": 5.1,
+     "positive": 3,
+     "of": 7
+    },
+    {
+     "id": "strat-fable",
+     "avgReturnPct": 4.5,
+     "positive": 3,
+     "of": 7
+    },
+    {
+     "id": "code-rotation",
+     "avgReturnPct": 3,
+     "positive": 4,
+     "of": 7
+    },
+    {
+     "id": "fable-discovery",
+     "avgReturnPct": 2.5,
+     "positive": 5,
+     "of": 7
+    },
+    {
+     "id": "strat-qwen",
+     "avgReturnPct": 1.7,
+     "positive": 3,
+     "of": 7
+    },
+    {
+     "id": "code-bollinger",
+     "avgReturnPct": 0.3,
+     "positive": 2,
+     "of": 7
+    },
+    {
+     "id": "strat-gpt",
+     "avgReturnPct": 0.3,
+     "positive": 3,
+     "of": 7
+    },
+    {
+     "id": "strat-deepseek",
+     "avgReturnPct": -0.4,
+     "positive": 1,
+     "of": 7
+    },
+    {
+     "id": "code-pullback",
+     "avgReturnPct": -1.3,
+     "positive": 3,
+     "of": 7
+    }
+   ]
+  },
+  "up2": {
+   "name": "صاعد قوي",
+   "periods": 3,
+   "hodlAvgPct": 97.5,
+   "ranking": [
+    {
+     "id": "code-breakout-nobtc",
+     "avgReturnPct": 55.5,
+     "positive": 3,
+     "of": 3
+    },
+    {
+     "id": "fable-discovery",
+     "avgReturnPct": 34.3,
+     "positive": 2,
+     "of": 3
+    },
+    {
+     "id": "code-dca",
+     "avgReturnPct": 24.8,
+     "positive": 3,
+     "of": 3
+    },
+    {
+     "id": "strat-gpt",
+     "avgReturnPct": 15.6,
+     "positive": 2,
+     "of": 3
+    },
+    {
+     "id": "code-rotation",
+     "avgReturnPct": 7.6,
+     "positive": 2,
+     "of": 3
+    },
+    {
+     "id": "code-breakout-btc",
+     "avgReturnPct": 6,
+     "positive": 2,
+     "of": 3
+    },
+    {
+     "id": "strat-deepseek",
+     "avgReturnPct": 5,
+     "positive": 2,
+     "of": 3
+    },
+    {
+     "id": "code-bollinger",
+     "avgReturnPct": 0.4,
+     "positive": 1,
+     "of": 3
+    },
+    {
+     "id": "strat-qwen",
+     "avgReturnPct": 0,
+     "positive": 1,
+     "of": 3
+    },
+    {
+     "id": "strat-fable",
+     "avgReturnPct": -1.1,
+     "positive": 0,
+     "of": 3
+    },
+    {
+     "id": "code-pullback",
+     "avgReturnPct": -5.1,
+     "positive": 1,
+     "of": 3
+    }
+   ]
+  },
+  "down": {
+   "name": "هابط",
+   "periods": 6,
+   "hodlAvgPct": -38,
+   "ranking": [
+    {
+     "id": "strat-deepseek",
+     "avgReturnPct": -2.1,
+     "positive": 0,
+     "of": 6
+    },
+    {
+     "id": "strat-fable",
+     "avgReturnPct": -2.3,
+     "positive": 0,
+     "of": 6
+    },
+    {
+     "id": "strat-qwen",
+     "avgReturnPct": -2.4,
+     "positive": 0,
+     "of": 6
+    },
+    {
+     "id": "code-breakout-btc",
+     "avgReturnPct": -3.7,
+     "positive": 0,
+     "of": 6
+    },
+    {
+     "id": "code-rotation",
+     "avgReturnPct": -4.5,
+     "positive": 1,
+     "of": 6
+    },
+    {
+     "id": "code-pullback",
+     "avgReturnPct": -5.2,
+     "positive": 1,
+     "of": 6
+    },
+    {
+     "id": "code-bollinger",
+     "avgReturnPct": -7.7,
+     "positive": 0,
+     "of": 6
+    },
+    {
+     "id": "code-breakout-nobtc",
+     "avgReturnPct": -8.1,
+     "positive": 1,
+     "of": 6
+    },
+    {
+     "id": "fable-discovery",
+     "avgReturnPct": -11.2,
+     "positive": 0,
+     "of": 6
+    },
+    {
+     "id": "strat-gpt",
+     "avgReturnPct": -13.1,
+     "positive": 0,
+     "of": 6
+    },
+    {
+     "id": "code-dca",
+     "avgReturnPct": -18.6,
+     "positive": 1,
+     "of": 6
+    }
+   ]
+  },
+  "side": {
+   "name": "عرضي متذبذب",
+   "periods": 4,
+   "hodlAvgPct": 16.2,
+   "ranking": [
+    {
+     "id": "code-breakout-nobtc",
+     "avgReturnPct": 24.7,
+     "positive": 3,
+     "of": 4
+    },
+    {
+     "id": "strat-gpt",
+     "avgReturnPct": 23.2,
+     "positive": 4,
+     "of": 4
+    },
+    {
+     "id": "code-breakout-btc",
+     "avgReturnPct": 19.8,
+     "positive": 3,
+     "of": 4
+    },
+    {
+     "id": "fable-discovery",
+     "avgReturnPct": 19.8,
+     "positive": 3,
+     "of": 4
+    },
+    {
+     "id": "code-rotation",
+     "avgReturnPct": 13.9,
+     "positive": 3,
+     "of": 4
+    },
+    {
+     "id": "strat-qwen",
+     "avgReturnPct": 13.1,
+     "positive": 3,
+     "of": 4
+    },
+    {
+     "id": "strat-fable",
+     "avgReturnPct": 12.1,
+     "positive": 3,
+     "of": 4
+    },
+    {
+     "id": "strat-deepseek",
+     "avgReturnPct": 11.9,
+     "positive": 3,
+     "of": 4
+    },
+    {
+     "id": "code-bollinger",
+     "avgReturnPct": 9.3,
+     "positive": 2,
+     "of": 4
+    },
+    {
+     "id": "code-pullback",
+     "avgReturnPct": 3,
+     "positive": 3,
+     "of": 4
+    },
+    {
+     "id": "code-dca",
+     "avgReturnPct": 1.8,
+     "positive": 2,
+     "of": 4
+    }
+   ]
+  },
+  "crash": {
+   "name": "انهيار",
+   "periods": 1,
+   "hodlAvgPct": -48.2,
+   "ranking": [
+    {
+     "id": "code-pullback",
+     "avgReturnPct": -3.5,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "code-bollinger",
+     "avgReturnPct": -7.6,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "strat-deepseek",
+     "avgReturnPct": -7.6,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "fable-discovery",
+     "avgReturnPct": -8.1,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "strat-fable",
+     "avgReturnPct": -9.3,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "strat-qwen",
+     "avgReturnPct": -12.2,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "strat-gpt",
+     "avgReturnPct": -13.8,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "code-rotation",
+     "avgReturnPct": -17.8,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "code-breakout-btc",
+     "avgReturnPct": -18.6,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "code-breakout-nobtc",
+     "avgReturnPct": -22.1,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "code-dca",
+     "avgReturnPct": -30,
+     "positive": 0,
+     "of": 1
+    }
+   ]
+  },
+  "corr": {
+   "name": "تصحيح",
+   "periods": 1,
+   "hodlAvgPct": -11.6,
+   "ranking": [
+    {
+     "id": "code-bollinger",
+     "avgReturnPct": 0.6,
+     "positive": 1,
+     "of": 1
+    },
+    {
+     "id": "strat-fable",
+     "avgReturnPct": -1.3,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "strat-deepseek",
+     "avgReturnPct": -1.8,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "code-breakout-btc",
+     "avgReturnPct": -2.8,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "code-breakout-nobtc",
+     "avgReturnPct": -2.8,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "strat-qwen",
+     "avgReturnPct": -2.8,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "code-dca",
+     "avgReturnPct": -2.9,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "code-pullback",
+     "avgReturnPct": -3.4,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "code-rotation",
+     "avgReturnPct": -3.6,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "fable-discovery",
+     "avgReturnPct": -4,
+     "positive": 0,
+     "of": 1
+    },
+    {
+     "id": "strat-gpt",
+     "avgReturnPct": -5.9,
+     "positive": 0,
+     "of": 1
+    }
+   ]
+  }
+ }
+}

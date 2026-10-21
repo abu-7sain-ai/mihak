@@ -529,6 +529,11 @@ bdi.n { direction: ltr; unicode-bidi: isolate; font-family: var(--mono); }
   <div id="comp-banner"></div>
 
   <div class="card">
+    <div class="card-title">حالة السوق والمايسترو</div>
+    <div id="regime-card"></div>
+  </div>
+
+  <div class="card">
     <div class="card-title">الترتيب</div>
     <div id="leaderboard"></div>
     <div class="form-hint" style="margin-top:8px">الفائز الحقيقي لازم يغلب الحَكَمين الاثنين. إذا ما غلبهم، ما فيه فائز.</div>
@@ -805,7 +810,7 @@ const BOT_COLORS = {
   'now-deepseek': '#3d8ef8', 'now-deepseek-chair': '#9cc3ff', 'now-deepseek-rule': '#1f56c9', 'now-deepseek-always': '#ff7eb6',
   'now-fable': '#ff6b4a', 'now-fable-chair': '#ffb199', 'now-fable-rule': '#c23b1c', 'now-fable-always': '#ffd24a',
   'code-breakout-btc': '#e8e8e8',
-  'fable-discovery': '#ff5e3a',
+  'fable-discovery': '#ff5e3a', 'maestro': '#ffffff',
   'code-rotation': '#f6c445', 'code-pullback': '#5bc0eb', 'code-bollinger': '#c792ea', 'code-dca': '#8bd450',
   'strat-fable': '#ff8f6b', 'strat-gpt': '#10a37f', 'strat-qwen': '#6c5ce7', 'strat-deepseek': '#4d6bfe', 'code-breakout-nobtc': '#9aa3ad',
   'past-strategy': '#f5a623', 'random': '#b48cff', 'hodl': '#7a8499',
@@ -918,7 +923,25 @@ function renderHeader() {
 
 // ── COMPETITION ──────────────────────────────────────────────────────────
 const COMP_DAYS = 56;
+// ── حالة السوق: الحالة الحالية، وش شغّال عند المايسترو، وفترات السوق ──────
+const BUCKET_LABEL = { bull: '🟢 صاعد', correction: '🟡 تصحيح', bear: '🔴 هابط', choppy: '〰️ متذبذب' };
+function renderRegimeCard() {
+  const r = G.regime, m = G.maestro, mp = G.marketPeriods;
+  const rows = [];
+  if (r) rows.push(`<div style="margin-bottom:6px"><strong>${esc(r.line || '')}</strong>${r.adx14 != null ? ` · ADX ${num(fmt(r.adx14, 1))}` : ''} <span class="form-hint">(آخر إغلاق ${esc(r.asOf || '')})</span></div>`);
+  if (m && m.version) rows.push(`<div style="margin-bottom:8px">المايسترو (${esc(m.version)}) بحالة <strong>${esc(BUCKET_LABEL[m.bucket] || '—')}</strong>: ${m.onNames && m.onNames.length ? m.onNames.map(n => `<span class="tag ok">${esc(n)}</span>`).join(' ') : '<span class="tag no">كاش — ولا استراتيجية مؤهلة</span>'}</div>`);
+  if (mp && mp.periods) {
+    rows.push(`<div class="form-hint" style="margin:6px 0 4px">فترات السوق بنظرة لورا (للفهم بس، مو للتداول) — لين ${esc(mp.dataEnd)}</div>`);
+    rows.push('<div style="overflow-x:auto"><table style="width:100%;font-size:.72rem;border-collapse:collapse">' +
+      '<tr style="color:var(--muted);text-align:right"><th>الفترة</th><th>من</th><th>إلى</th><th>الأيام</th><th>البتكوين</th></tr>' +
+      mp.periods.slice().reverse().map(p => `<tr style="border-top:1px solid var(--bd)"><td>${esc(p.name)}</td><td>${num(esc(p.start))}</td><td>${num(esc(p.end))}</td><td>${num(p.days)}</td><td style="color:${p.btcChangePct >= 0 ? 'var(--green, #00d4a0)' : 'var(--red, #ff5c5c)'}">${num((p.btcChangePct > 0 ? '+' : '') + p.btcChangePct + '%')}</td></tr>`).join('') +
+      '</table></div>');
+  }
+  $('regime-card').innerHTML = rows.join('') || '<div class="form-hint">ما فيه بيانات للحين.</div>';
+}
+
 function renderCompetition() {
+  renderRegimeCard();
   const c = G.competition;
   if (c.startedAt) {
     const days = (Date.now() - c.startedAt) / 86400000;

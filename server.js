@@ -17,7 +17,8 @@ const ind = require('./lib/indicators');
 const { createMcpHandler } = require('./lib/mcp');
 const strategies = require('./lib/strategies');
 const strategySpec = require('./lib/strategy-spec');
-const { computeRegime, regimeLine, changeMessage } = require('./lib/regime');
+const { computeRegime, regimeLine, changeMessage, BUCKET_AR } = require('./lib/regime');
+const { buildMaestro, MAESTRO_MAPPING } = require('./lib/maestro');
 const { createTelegram } = require('./lib/telegram');
 strategies.byId['fable-discovery'] = require('./lib/fable-discovery');   // اكتشاف Fable: من بحثه على 2021–2024، مجمّد
 
@@ -32,6 +33,24 @@ for (const [id] of SPEC_IDS) {
     if (j.valid) SPEC_STRATS[id] = { ...strategySpec.compile(j.spec, id), nameAr: j.name };
   } catch (e) { SPEC_INFO[id] = { valid: false, errors: [e.message] }; }
 }
+// ── المايسترو: خريطة مجمّدة (research/maestro-mapping-v1.json) ─────────────
+let MAESTRO = null, MAESTRO_MAP = null, MAESTRO_RESULTS = {};
+try {
+  MAESTRO_MAP = JSON.parse(fs.readFileSync(path.join(__dirname, MAESTRO_MAPPING), 'utf-8'));
+  MAESTRO = buildMaestro(MAESTRO_MAP, { ...strategies.byId, ...SPEC_STRATS });
+  strategies.byId.maestro = MAESTRO;
+  for (const f of ['maestro-insample', 'maestro-oos']) {
+    const p = path.join(__dirname, 'research', `${f}.json`);
+    if (fs.existsSync(p)) MAESTRO_RESULTS[f] = JSON.parse(fs.readFileSync(p, 'utf-8')).rows.find(r => r.id === 'maestro');
+  }
+} catch (e) { console.error(`المايسترو: ${e.message}`); }
+// ملخص فترات السوق (بنظرة لورا، للفهم بس) من research/market-periods.json
+let MARKET_PERIODS = null;
+try {
+  const mp = JSON.parse(fs.readFileSync(path.join(__dirname, 'research', 'market-periods.json'), 'utf-8'));
+  MARKET_PERIODS = { generatedAt: mp.generatedAt, dataEnd: mp.dataEnd, periods: mp.periods.map(p => ({ name: p.name, type: p.type, start: p.start, end: p.end, days: p.days, btcChangePct: p.btcChangePct })) };
+} catch { /* الملف اختياري */ }
+
 function specDesc(id) {
   const j = SPEC_INFO[id];
   if (!j?.valid) return 'النموذج ما سلّم استراتيجية صالحة، فهذا المتسابق ما يتداول.';
@@ -168,6 +187,7 @@ const BOTS = [
     desc: 'كل أسبوع يشتري BTC و ETH بـ$30 لكل وحدة، و$60 إذا العملة تحت متوسط 50 يوم. الميزانية تكفي 8 أسابيع حتى لو كل الشراء مضاعف. ما يبيع وما له وقف.' },
   { id: 'fable-discovery', name: 'اكتشاف Fable', kind: 'code', strategy: 'fable-discovery', team: 'code',
     desc: 'Fable لقاها بنفسه من بحث على 2021–2024 (10 أفكار، بدون اختراقات):\n1. شموع 4 ساعات، شراء فقط (سبوت).\n2. السوق لازم يكون صاعد: البتكوين فوق متوسطه 200 ومتوسطه 50 فوق 200 (4 ساعات).\n3. العملة نفسها في اتجاه صاعد: متوسطها 50 فوق 200.\n4. يدخل لما السعر يرجع فوق متوسط 20 بعد ما كان تحته في الشمعة اللي قبلها.\n5. وقف خسارة 8%، ويطلع لما الشمعة تقفل تحت متوسط 50.\nيخسر لما: السوق هابط أو عرضي، أو البتكوين يتذبذب حول متوسطه 200.\nفي الفحص المستقل (2025→الحين): −30%.' },
+  { id: 'maestro', name: 'المايسترو', kind: 'code', strategy: 'maestro', team: 'code', desc: () => maestroDesc() },
   { id: 'past-strategy', name: 'الماضي · استراتيجية', kind: 'webhook', team: 'past',
     desc: 'استراتيجية مختبرة على سنين في TradingView، ترسل إشاراتها هنا.' },
   { id: 'random', name: 'العشوائي', kind: 'random', referee: true,
@@ -929,6 +949,27 @@ async function runCodeBots(now = Date.now()) {
   } finally { codeRunning = false; }
 }
 
+// ── المايسترو: وش شغّال الحين ──────────────────────────────────────────────
+const STRAT_NAME = id => (BOTS.find(b => b.strategy === id && b.id !== 'maestro')?.name || id);
+function maestroNow() {
+  const r = state.regime;
+  const bucket = r?.bucket || null;
+  const on = bucket && MAESTRO_MAP ? (MAESTRO_MAP.on[bucket] || []) : [];
+  return { version: MAESTRO_MAP?.version || null, bucket, bucketAr: bucket ? BUCKET_AR[bucket] : null, on, onNames: on.map(STRAT_NAME), asOf: r?.asOf || null };
+}
+function maestroDesc() {
+  if (!MAESTRO_MAP) return 'الخريطة مو موجودة، فالمايسترو ما يتداول.';
+  const now = maestroNow();
+  const map = ['bull', 'correction', 'bear', 'choppy'].map(b => `${BUCKET_AR[b]}: ${(MAESTRO_MAP.on[b] || []).map(STRAT_NAME).join('، ') || 'كاش'}`).join('\n');
+  const f = (x, label) => (x ? `${label}: ${x.returnPct > 0 ? '+' : ''}${x.returnPct}% (PF ${x.pf ?? '—'}، أكبر تراجع ${x.maxDDPct}%)` : '');
+  return [
+    `يشغّل في كل حالة سوق الاستراتيجيات اللي نجحت فيها على 2021–2024 بس (خريطة ${MAESTRO_MAP.version} مجمّدة: معامل ربح 1.2 أو أكثر، 30 صفقة أو أكثر، وربح). الحالة من نفس كاشف السوق الحي، وإذا ولا وحدة مؤهلة يقعد كاش.`,
+    now.bucket ? `الحين (${now.asOf}): ${now.bucketAr} → شغّال: ${now.onNames.join('، ') || 'ولا وحدة (كاش)'}` : 'الحين: حالة السوق ما انحسبت بعد',
+    map,
+    [f(MAESTRO_RESULTS['maestro-insample'], 'الاختبار 2021–2024'), f(MAESTRO_RESULTS['maestro-oos'], 'الفحص المستقل 2025→الحين (مرة وحدة)')].filter(Boolean).join(' · '),
+  ].join('\n');
+}
+
 // آخر شمعة يومية سكّرت، وهل هي شمعة الأحد (UTC) وسكّرت قريب. ترجع null إذا ما فيه شي نسويه
 function weeklyTrigger(bot, now) {
   const day = strategies.DAY;
@@ -1041,7 +1082,7 @@ async function runCodeBot(def, now) {
     const trade = activeTrades(def.id).find(t => t.symbol === sym);
 
     if (trade) {
-      const pos = { stop: trade.stopLoss, trail: trade.trail ?? undefined, highestHigh: Math.max(trade.highestHigh ?? 0, c.high) };
+      const pos = { stop: trade.stopLoss, trail: trade.trail ?? undefined, highestHigh: Math.max(trade.highestHigh ?? 0, c.high), sub: trade.sub };
       trade.highestHigh = pos.highestHigh;
       const out = strat.exit(S, i, pos);
       if (pos.trail != null) trade.trail = pos.trail;
@@ -1054,7 +1095,9 @@ async function runCodeBot(def, now) {
     if (now - (c.t + tfMs) > CODE_FRESH_MS[strat.tf]) continue;
     if (!strat.entry(S, i)) continue;
     const vol = candles.slice(-Math.round(20 * strategies.DAY / tfMs)).reduce((s, x) => s + (x.quoteVolume || 0), 0);
-    signals.push({ sym, stop: strat.initialStop(S, i), close: c.close, vol });
+    signals.push({ sym, stop: strat.initialStop(S, i), close: c.close, vol,
+      sub: strat.subIdAt ? strat.subIdAt(S, i) : null,                                  // المايسترو: مين فتحها
+      hold: strat.holdBarsAt ? strat.holdBarsAt(S, i) : strat.maxHoldBars ?? null });
   }
 
   for (const { trade, sym } of exits) {
@@ -1069,9 +1112,9 @@ async function runCodeBot(def, now) {
     const slPercent = s.stop != null ? (s.stop / price - 1) * 100 : -99;
     if (slPercent >= 0) { notes.push(`${s.sym}: السعر نزل تحت الوقف قبل الدخول`); continue; }
     const res = await enterTrade(def.id, {
-      symbol: s.sym, reason: `إشارة ${strat.nameAr}`, tpPercent: null, slPercent,
-      maxMinutes: strat.maxHoldBars ? strat.maxHoldBars * tfMs / 60_000 : null,   // أطول مدة (إذا الاستراتيجية حددتها)
-      extra: { strategy: strat.id, trail: undefined, highestHigh: price },
+      symbol: s.sym, reason: s.sub ? `إشارة ${STRAT_NAME(s.sub)} (من المايسترو)` : `إشارة ${strat.nameAr}`, tpPercent: null, slPercent,
+      maxMinutes: s.hold ? s.hold * tfMs / 60_000 : null,   // أطول مدة (إذا الاستراتيجية حددتها)
+      extra: { strategy: strat.id, trail: undefined, highestHigh: price, ...(s.sub ? { sub: s.sub } : {}) },
     });
     if (res.error) notes.push(`${s.sym}: ${res.error}`); else entered.push(s.sym);
   }
@@ -1095,7 +1138,7 @@ async function runCodeBot(def, now) {
 async function updateRegime(now = Date.now()) {
   const day = strategies.DAY;
   const lastStart = Math.floor(now / day) * day - day;
-  const current = state.regime?.sma50 != null ? state.regime : null;   // الصيغة القديمة (بدون متوسط 50) تنحسب من جديد
+  const current = state.regime?.bucket != null ? state.regime : null;   // الصيغ القديمة (بدون متوسط 50 أو علامة التذبذب) تنحسب من جديد
   if (current && current.asOfT >= lastStart) return state.regime;
   if (current && now - (lastStart + day) < 5 * 60_000) return state.regime;
   const daily = (await market.klines('BTCUSDT', '1d', 1000)).filter(c => c.t + day <= now);
@@ -1266,7 +1309,7 @@ function botSnapshot(id) {
   const active = bot.trades.filter(t => t.status === 'active');
   const closed = bot.trades.filter(t => t.status !== 'active').slice(0, 200);
   return {
-    def: { id, name: def.name, kind: def.kind, model: def.model || null, referee: !!def.referee, team: def.team || null, desc: def.desc, family: def.family || null, chair: def.chair || null, source: def.source || null },
+    def: { id, name: def.name, kind: def.kind, model: def.model || null, referee: !!def.referee, team: def.team || null, desc: typeof def.desc === 'function' ? def.desc() : def.desc, family: def.family || null, chair: def.chair || null, source: def.source || null },
     balance: acc.round(bot.balance),
     equity: acc.round(equity),
     stats,
@@ -1303,6 +1346,8 @@ function clientSnapshot() {
     nextDecisionAt: state.system.nextDecisionAt,
     aiPaused: !!R().aiPaused,
     regime: state.regime ? { ...state.regime, line: regimeLine(state.regime) } : null,
+    maestro: maestroNow(),
+    marketPeriods: MARKET_PERIODS,
     keys: { xai: !!KEYS.xai, openrouter: !!KEYS.openrouter, webhook: !!KEYS.webhook },
     models: MODELS,
     meetings: Object.fromEntries(BOTS.filter(b => b.kind === 'ai').map(b => [b.id, meetingStats(b.id)])),
@@ -1547,6 +1592,8 @@ function mcpTools() {
           news: { at: iso(state.news.at), error: state.news.error, searches: state.news.searches },
           aiPaused: snap.aiPaused,
           regime: snap.regime,
+          maestro: snap.maestro,
+          marketPeriods: snap.marketPeriods,
           fable: snap.fable,
           fairComparison: snap.fairComparison,
           universe: snap.universe,
@@ -1735,4 +1782,4 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 function start() { server.listen(PORT, main); }
 if (require.main === module) start();
 
-module.exports = { start, app, server, _internals: { BOT, blockReason, updateRegime, weeklySummary, announceDeploy, setTelegram: t => { tg = t; }, actions, runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };
+module.exports = { start, app, server, _internals: { BOT, maestroNow, maestroDesc, blockReason, updateRegime, weeklySummary, announceDeploy, setTelegram: t => { tg = t; }, actions, runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };

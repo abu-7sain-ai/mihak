@@ -1,0 +1,502 @@
+{
+ "generatedAt": "2026-10-21T07:18:13.440Z",
+ "period": "2021-01-01 → 2024-12-31",
+ "rules": {
+  "startingBalance": 1000,
+  "tradeAmount": 100,
+  "takeProfitPercent": 3,
+  "stopLossPercent": -2,
+  "maxTradeTimeMinutes": 1440,
+  "minStopPercent": 1,
+  "maxStopPercent": 5,
+  "minRewardRisk": 1.5,
+  "maxTakeProfitPercent": 20,
+  "minHoldHours": 1,
+  "maxHoldHours": 48,
+  "shadowMeetings": true,
+  "maxConcurrentTrades": 10,
+  "feePercent": 0.1,
+  "slippagePercent": 0.05,
+  "dailyLossLimitPercent": 5,
+  "consecutiveLossLimit": 4,
+  "cooldownHours": 6,
+  "decisionIntervalMinutes": 15,
+  "newsIntervalMinutes": 60,
+  "xIntervalMinutes": 240,
+  "minConfidence": 50,
+  "randomEntryProbability": 0.5,
+  "strategyStopLossPercent": -3,
+  "ruleChairMinVotes": 2,
+  "ruleChairMinConfidence": 60,
+  "aiPaused": true
+ },
+ "regimeDays": {
+  "none": 199,
+  "bear": 397,
+  "bull": 476,
+  "correction": 133,
+  "choppy": 256
+ },
+ "contestants": {
+  "code-breakout-btc": {
+   "strategy": "breakout-btc-4h",
+   "total": {
+    "returnPct": 84.8,
+    "trades": 601,
+    "pf": 1.38,
+    "maxDDPct": 42.3
+   },
+   "byRegime": {
+    "bull": {
+     "trades": 415,
+     "pnlUSD": 1000.28,
+     "returnPct": 100,
+     "pf": 1.63,
+     "winRate": 31.3
+    },
+    "correction": {
+     "trades": 75,
+     "pnlUSD": -78.24,
+     "returnPct": -7.8,
+     "pf": 0.71,
+     "winRate": 21.3
+    },
+    "bear": {
+     "trades": 20,
+     "pnlUSD": -83.43,
+     "returnPct": -8.3,
+     "pf": 0.16,
+     "winRate": 5
+    },
+    "choppy": {
+     "trades": 91,
+     "pnlUSD": 9.46,
+     "returnPct": 0.9,
+     "pf": 1.04,
+     "winRate": 23.1
+    },
+    "none": {
+     "trades": 0,
+     "pnlUSD": 0,
+     "returnPct": 0,
+     "pf": null,
+     "winRate": null
+    }
+   }
+  },
+  "code-breakout-nobtc": {
+   "strategy": "base-breakout",
+   "total": {
+    "returnPct": 239.8,
+    "trades": 929,
+    "pf": 1.7,
+    "maxDDPct": 28.3
+   },
+   "byRegime": {
+    "bull": {
+     "trades": 394,
+     "pnlUSD": 628.73,
+     "returnPct": 62.9,
+     "pf": 1.4,
+     "winRate": 29.2
+    },
+    "correction": {
+     "trades": 72,
+     "pnlUSD": -59.71,
+     "returnPct": -6,
+     "pf": 0.76,
+     "winRate": 22.2
+    },
+    "bear": {
+     "trades": 164,
+     "pnlUSD": 242.08,
+     "returnPct": 24.2,
+     "pf": 1.38,
+     "winRate": 26.2
+    },
+    "choppy": {
+     "trades": 199,
+     "pnlUSD": 433.55,
+     "returnPct": 43.4,
+     "pf": 1.91,
+     "winRate": 36.2
+    },
+    "none": {
+     "trades": 100,
+     "pnlUSD": 1152.88,
+     "returnPct": 115.3,
+     "pf": 3.31,
+     "winRate": 43
+    }
+   }
+  },
+  "code-rotation": {
+   "strategy": "rotation-1d",
+   "total": {
+    "returnPct": 89.2,
+    "trades": 165,
+    "pf": 1.87,
+    "maxDDPct": 35
+   },
+   "byRegime": {
+    "bull": {
+     "trades": 83,
+     "pnlUSD": -31.7,
+     "returnPct": -3.2,
+     "pf": 0.95,
+     "winRate": 31.3
+    },
+    "correction": {
+     "trades": 24,
+     "pnlUSD": 2.12,
+     "returnPct": 0.2,
+     "pf": 1.02,
+     "winRate": 41.7
+    },
+    "bear": {
+     "trades": 28,
+     "pnlUSD": 447.77,
+     "returnPct": 44.8,
+     "pf": 3.59,
+     "winRate": 42.9
+    },
+    "choppy": {
+     "trades": 30,
+     "pnlUSD": 473.5,
+     "returnPct": 47.4,
+     "pf": 3.84,
+     "winRate": 50
+    },
+    "none": {
+     "trades": 0,
+     "pnlUSD": 0,
+     "returnPct": 0,
+     "pf": null,
+     "winRate": null
+    }
+   }
+  },
+  "code-pullback": {
+   "strategy": "pullback-rsi2-4h",
+   "total": {
+    "returnPct": -22.9,
+    "trades": 2225,
+    "pf": 0.92,
+    "maxDDPct": 41.6
+   },
+   "byRegime": {
+    "bull": {
+     "trades": 1261,
+     "pnlUSD": 155.71,
+     "returnPct": 15.6,
+     "pf": 1.13,
+     "winRate": 61.9
+    },
+    "correction": {
+     "trades": 63,
+     "pnlUSD": -35.22,
+     "returnPct": -3.5,
+     "pf": 0.61,
+     "winRate": 55.6
+    },
+    "bear": {
+     "trades": 288,
+     "pnlUSD": -81.26,
+     "returnPct": -8.1,
+     "pf": 0.78,
+     "winRate": 57.6
+    },
+    "choppy": {
+     "trades": 346,
+     "pnlUSD": -73.04,
+     "returnPct": -7.3,
+     "pf": 0.79,
+     "winRate": 58.7
+    },
+    "none": {
+     "trades": 267,
+     "pnlUSD": -195.69,
+     "returnPct": -19.6,
+     "pf": 0.7,
+     "winRate": 60.7
+    }
+   }
+  },
+  "code-bollinger": {
+   "strategy": "bollinger-4h",
+   "total": {
+    "returnPct": -0.9,
+    "trades": 1299,
+    "pf": 1,
+    "maxDDPct": 42.1
+   },
+   "byRegime": {
+    "bull": {
+     "trades": 790,
+     "pnlUSD": 427.62,
+     "returnPct": 42.8,
+     "pf": 1.29,
+     "winRate": 62.8
+    },
+    "correction": {
+     "trades": 270,
+     "pnlUSD": -146.11,
+     "returnPct": -14.6,
+     "pf": 0.77,
+     "winRate": 54.4
+    },
+    "bear": {
+     "trades": 1,
+     "pnlUSD": 1.07,
+     "returnPct": 0.1,
+     "pf": null,
+     "winRate": 100
+    },
+    "choppy": {
+     "trades": 238,
+     "pnlUSD": -291.92,
+     "returnPct": -29.2,
+     "pf": 0.52,
+     "winRate": 49.2
+    },
+    "none": {
+     "trades": 0,
+     "pnlUSD": 0,
+     "returnPct": 0,
+     "pf": null,
+     "winRate": null
+    }
+   }
+  },
+  "strat-fable": {
+   "strategy": "strat-fable",
+   "total": {
+    "returnPct": 25.3,
+    "trades": 936,
+    "pf": 1.11,
+    "maxDDPct": 38
+   },
+   "byRegime": {
+    "bull": {
+     "trades": 643,
+     "pnlUSD": 337.69,
+     "returnPct": 33.8,
+     "pf": 1.19,
+     "winRate": 31.6
+    },
+    "correction": {
+     "trades": 151,
+     "pnlUSD": -18.66,
+     "returnPct": -1.9,
+     "pf": 0.93,
+     "winRate": 24.5
+    },
+    "bear": {
+     "trades": 31,
+     "pnlUSD": -59.32,
+     "returnPct": -5.9,
+     "pf": 0.31,
+     "winRate": 16.1
+    },
+    "choppy": {
+     "trades": 111,
+     "pnlUSD": -6.62,
+     "returnPct": -0.7,
+     "pf": 0.96,
+     "winRate": 32.4
+    },
+    "none": {
+     "trades": 0,
+     "pnlUSD": 0,
+     "returnPct": 0,
+     "pf": null,
+     "winRate": null
+    }
+   }
+  },
+  "strat-gpt": {
+   "strategy": "strat-gpt",
+   "total": {
+    "returnPct": 76.6,
+    "trades": 1888,
+    "pf": 1.17,
+    "maxDDPct": 32.9
+   },
+   "byRegime": {
+    "bull": {
+     "trades": 931,
+     "pnlUSD": 677.1,
+     "returnPct": 67.7,
+     "pf": 1.32,
+     "winRate": 30.7
+    },
+    "correction": {
+     "trades": 79,
+     "pnlUSD": -127.6,
+     "returnPct": -12.8,
+     "pf": 0.34,
+     "winRate": 13.9
+    },
+    "bear": {
+     "trades": 323,
+     "pnlUSD": -296.79,
+     "returnPct": -29.7,
+     "pf": 0.62,
+     "winRate": 26.6
+    },
+    "choppy": {
+     "trades": 271,
+     "pnlUSD": 388.35,
+     "returnPct": 38.8,
+     "pf": 1.99,
+     "winRate": 36.5
+    },
+    "none": {
+     "trades": 284,
+     "pnlUSD": 124.73,
+     "returnPct": 12.5,
+     "pf": 1.12,
+     "winRate": 32.7
+    }
+   }
+  },
+  "strat-qwen": {
+   "strategy": "strat-qwen",
+   "total": {
+    "returnPct": 48.3,
+    "trades": 968,
+    "pf": 1.19,
+    "maxDDPct": 25.7
+   },
+   "byRegime": {
+    "bull": {
+     "trades": 823,
+     "pnlUSD": 457.58,
+     "returnPct": 45.8,
+     "pf": 1.21,
+     "winRate": 34.3
+    },
+    "correction": {
+     "trades": 49,
+     "pnlUSD": 2,
+     "returnPct": 0.2,
+     "pf": 1.02,
+     "winRate": 32.7
+    },
+    "bear": {
+     "trades": 3,
+     "pnlUSD": -12.75,
+     "returnPct": -1.3,
+     "pf": 0,
+     "winRate": 0
+    },
+    "choppy": {
+     "trades": 93,
+     "pnlUSD": 36.1,
+     "returnPct": 3.6,
+     "pf": 1.2,
+     "winRate": 36.6
+    },
+    "none": {
+     "trades": 0,
+     "pnlUSD": 0,
+     "returnPct": 0,
+     "pf": null,
+     "winRate": null
+    }
+   }
+  },
+  "strat-deepseek": {
+   "strategy": "strat-deepseek",
+   "total": {
+    "returnPct": 38.8,
+    "trades": 707,
+    "pf": 1.2,
+    "maxDDPct": 17.7
+   },
+   "byRegime": {
+    "bull": {
+     "trades": 608,
+     "pnlUSD": 299,
+     "returnPct": 29.9,
+     "pf": 1.18,
+     "winRate": 31.7
+    },
+    "correction": {
+     "trades": 32,
+     "pnlUSD": 24.69,
+     "returnPct": 2.5,
+     "pf": 1.34,
+     "winRate": 34.4
+    },
+    "bear": {
+     "trades": 1,
+     "pnlUSD": -3.56,
+     "returnPct": -0.4,
+     "pf": 0,
+     "winRate": 0
+    },
+    "choppy": {
+     "trades": 66,
+     "pnlUSD": 67.6,
+     "returnPct": 6.8,
+     "pf": 1.54,
+     "winRate": 36.4
+    },
+    "none": {
+     "trades": 0,
+     "pnlUSD": 0,
+     "returnPct": 0,
+     "pf": null,
+     "winRate": null
+    }
+   }
+  },
+  "fable-discovery": {
+   "strategy": "fable-discovery",
+   "total": {
+    "returnPct": 155.8,
+    "trades": 1437,
+    "pf": 1.6,
+    "maxDDPct": 20.5
+   },
+   "byRegime": {
+    "bull": {
+     "trades": 991,
+     "pnlUSD": 518.14,
+     "returnPct": 51.8,
+     "pf": 1.3,
+     "winRate": 24.3
+    },
+    "correction": {
+     "trades": 0,
+     "pnlUSD": 0,
+     "returnPct": 0,
+     "pf": null,
+     "winRate": null
+    },
+    "bear": {
+     "trades": 98,
+     "pnlUSD": 339.95,
+     "returnPct": 34,
+     "pf": 2.61,
+     "winRate": 24.5
+    },
+    "choppy": {
+     "trades": 186,
+     "pnlUSD": 203.37,
+     "returnPct": 20.3,
+     "pf": 1.82,
+     "winRate": 30.6
+    },
+    "none": {
+     "trades": 162,
+     "pnlUSD": 496.1,
+     "returnPct": 49.6,
+     "pf": 2.25,
+     "winRate": 28.4
+    }
+   }
+  }
+ }
+}

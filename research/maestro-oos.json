@@ -1,0 +1,104 @@
+{
+ "ranAt": "2026-10-21T07:20:54.109Z",
+ "period": "2025-01-01 → 2026-10-20",
+ "mapping": "research/maestro-mapping-v1.json",
+ "rows": [
+  {
+   "id": "maestro",
+   "returnPct": -22,
+   "trades": 872,
+   "pf": 0.88,
+   "maxDDPct": 40.8,
+   "winRate": 31.3,
+   "byRegime": {
+    "bull": {
+     "trades": 394,
+     "pnlUSD": -143.97,
+     "returnPct": -14.4,
+     "pf": 0.82,
+     "winRate": 38.3
+    },
+    "correction": {
+     "trades": 11,
+     "pnlUSD": -27.29,
+     "returnPct": -2.7,
+     "pf": 0.26,
+     "winRate": 9.1
+    },
+    "bear": {
+     "trades": 143,
+     "pnlUSD": -247.55,
+     "returnPct": -24.8,
+     "pf": 0.24,
+     "winRate": 15.4
+    },
+    "choppy": {
+     "trades": 324,
+     "pnlUSD": 198.84,
+     "returnPct": 19.9,
+     "pf": 1.33,
+     "winRate": 30.6
+    },
+    "none": {
+     "trades": 0,
+     "pnlUSD": 0,
+     "returnPct": 0,
+     "pf": null,
+     "winRate": null
+    }
+   }
+  },
+  {
+   "id": "code-breakout-btc",
+   "returnPct": 9.4,
+   "trades": 241,
+   "pf": 1.12,
+   "maxDDPct": 32.2,
+   "winRate": 30.3,
+   "byRegime": {
+    "bull": {
+     "trades": 95,
+     "pnlUSD": 79.62,
+     "returnPct": 8,
+     "pf": 1.26,
+     "winRate": 32.6
+    },
+    "correction": {
+     "trades": 31,
+     "pnlUSD": -107.33,
+     "returnPct": -10.7,
+     "pf": 0.15,
+     "winRate": 9.7
+    },
+    "bear": {
+     "trades": 0,
+     "pnlUSD": 0,
+     "returnPct": 0,
+     "pf": null,
+     "winRate": null
+    },
+    "choppy": {
+     "trades": 115,
+     "pnlUSD": 121.35,
+     "returnPct": 12.1,
+     "pf": 1.35,
+     "winRate": 33.9
+    },
+    "none": {
+     "trades": 0,
+     "pnlUSD": 0,
+     "returnPct": 0,
+     "pf": null,
+     "winRate": null
+    }
+   }
+  },
+  {
+   "id": "hodl",
+   "returnPct": -11.5,
+   "trades": 1,
+   "pf": null,
+   "maxDDPct": 53
+  }
+ ]
+}

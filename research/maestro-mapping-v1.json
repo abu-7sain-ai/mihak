@@ -1,0 +1,155 @@
+{
+  "version": "v1",
+  "frozen": true,
+  "createdAt": "2026-10-21T07:19:50.592Z",
+  "rule": {
+    "minPF": 1.2,
+    "minTrades": 30,
+    "minPnlUSD": 0,
+    "period": "2021-01-01 → 2024-12-31"
+  },
+  "candidates": [
+    "code-breakout-btc",
+    "code-breakout-nobtc",
+    "code-pullback",
+    "code-bollinger",
+    "strat-fable",
+    "strat-gpt",
+    "strat-qwen",
+    "strat-deepseek",
+    "fable-discovery"
+  ],
+  "sourceMatrixGeneratedAt": "2026-10-21T07:18:13.440Z",
+  "on": {
+    "bull": [
+      "breakout-btc-4h",
+      "base-breakout",
+      "strat-gpt",
+      "fable-discovery",
+      "bollinger-4h",
+      "strat-qwen"
+    ],
+    "correction": [
+      "strat-deepseek"
+    ],
+    "bear": [
+      "fable-discovery",
+      "base-breakout"
+    ],
+    "choppy": [
+      "strat-gpt",
+      "base-breakout",
+      "fable-discovery",
+      "strat-deepseek",
+      "strat-qwen"
+    ]
+  },
+  "detail": {
+    "bull": [
+      {
+        "contestant": "code-breakout-btc",
+        "strategy": "breakout-btc-4h",
+        "pf": 1.63,
+        "trades": 415,
+        "returnPct": 100
+      },
+      {
+        "contestant": "code-breakout-nobtc",
+        "strategy": "base-breakout",
+        "pf": 1.4,
+        "trades": 394,
+        "returnPct": 62.9
+      },
+      {
+        "contestant": "strat-gpt",
+        "strategy": "strat-gpt",
+        "pf": 1.32,
+        "trades": 931,
+        "returnPct": 67.7
+      },
+      {
+        "contestant": "fable-discovery",
+        "strategy": "fable-discovery",
+        "pf": 1.3,
+        "trades": 991,
+        "returnPct": 51.8
+      },
+      {
+        "contestant": "code-bollinger",
+        "strategy": "bollinger-4h",
+        "pf": 1.29,
+        "trades": 790,
+        "returnPct": 42.8
+      },
+      {
+        "contestant": "strat-qwen",
+        "strategy": "strat-qwen",
+        "pf": 1.21,
+        "trades": 823,
+        "returnPct": 45.8
+      }
+    ],
+    "correction": [
+      {
+        "contestant": "strat-deepseek",
+        "strategy": "strat-deepseek",
+        "pf": 1.34,
+        "trades": 32,
+        "returnPct": 2.5
+      }
+    ],
+    "bear": [
+      {
+        "contestant": "fable-discovery",
+        "strategy": "fable-discovery",
+        "pf": 2.61,
+        "trades": 98,
+        "returnPct": 34
+      },
+      {
+        "contestant": "code-breakout-nobtc",
+        "strategy": "base-breakout",
+        "pf": 1.38,
+        "trades": 164,
+        "returnPct": 24.2
+      }
+    ],
+    "choppy": [
+      {
+        "contestant": "strat-gpt",
+        "strategy": "strat-gpt",
+        "pf": 1.99,
+        "trades": 271,
+        "returnPct": 38.8
+      },
+      {
+        "contestant": "code-breakout-nobtc",
+        "strategy": "base-breakout",
+        "pf": 1.91,
+        "trades": 199,
+        "returnPct": 43.4
+      },
+      {
+        "contestant": "fable-discovery",
+        "strategy": "fable-discovery",
+        "pf": 1.82,
+        "trades": 186,
+        "returnPct": 20.3
+      },
+      {
+        "contestant": "strat-deepseek",
+        "strategy": "strat-deepseek",
+        "pf": 1.54,
+        "trades": 66,
+        "returnPct": 6.8
+      },
+      {
+        "contestant": "strat-qwen",
+        "strategy": "strat-qwen",
+        "pf": 1.2,
+        "trades": 93,
+        "returnPct": 3.6
+      }
+    ]
+  }
+}

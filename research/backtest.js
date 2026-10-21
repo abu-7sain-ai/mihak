@@ -20,6 +20,10 @@ if (fs.existsSync(SPEC_DIR)) for (const f of fs.readdirSync(SPEC_DIR).filter(f =
   const j = JSON.parse(fs.readFileSync(path.join(SPEC_DIR, f), 'utf-8'));
   if (j.valid) byId[j.id] = { ...compile(j.spec, j.id), name: `${j.name} (${j.modelUsed})` };
 }
+// المايسترو: من الخريطة المجمّدة (إذا انصنعت)
+const { MAESTRO_MAPPING } = require('../lib/maestro');
+const mappingFile = path.join(__dirname, '..', MAESTRO_MAPPING);
+if (fs.existsSync(mappingFile)) byId.maestro = require('../lib/maestro').buildMaestro(JSON.parse(fs.readFileSync(mappingFile, 'utf-8')), byId);
 
 const COINS = ['BTC', 'ETH', 'XRP', 'BNB', 'SOL', 'TRX', 'BCH', 'ADA', 'LINK', 'XLM', 'LTC', 'HBAR', 'AVAX', 'SUI', 'DOT', 'SEI'].map(c => `${c}USDT`);
 const RULES = { feePercent: 0.1, slippagePercent: 0.05 };
@@ -223,7 +227,7 @@ function summarize(strat, runners, period) {
   const total = coins.reduce((s, c) => s + c.pnl, 0);
   const trades = coins.reduce((s, c) => s + c.trades, 0);
   const top = coins.reduce((a, b) => (b.pnl > a.pnl ? b : a));
-  return {
+  const res = {
     id: strat.id, name: strat.name, tf: strat.tf,
     total, trades,
     winRate: trades ? coins.reduce((s, c) => s + c.wins, 0) / trades * 100 : 0,
@@ -240,6 +244,9 @@ function summarize(strat, runners, period) {
     skipped: coins.reduce((s, c) => s + c.skipped, 0),
     coins,
   };
+  // كل صفقة (للتقسيم حسب حالة السوق) — مخفية عشان ما تكبّر ملفات النتائج
+  Object.defineProperty(res, 'tradeList', { value: runners.flatMap(R => R.trades), enumerable: false });
+  return res;
 }
 
 // الشروط (لكل فترة): ربح، 10 عملات من 16 رابحة، تغلب الشراء والاحتفاظ في 9 على الأقل، وأكبر عملة ≤ 30%
@@ -326,4 +333,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { perCoin, portfolio, verdict, makeRunner, useLiveRules, byId, PERIODS, COINS };
+module.exports = { perCoin, portfolio, verdict, makeRunner, useLiveRules, dcaSim, hodlSim, load, byId, PERIODS, COINS };
