@@ -258,18 +258,28 @@ function loadDb() {
       log.warn(`db.json من نسخة قديمة — انحفظ في ${path.basename(backup)} وبدينا من جديد`);
       return;
     }
+    // ترقية: قبل تقسيم الأخبار، newsIntervalMinutes كان لـ Grok. الحين صار للمواقع (رخيص) فنرجعه لساعة.
+    const rules = { ...DEFAULT_RULES, ...saved.rules,
+      ...(saved.rules && saved.rules.xIntervalMinutes == null ? { newsIntervalMinutes: 60 } : {}),
+      // ترقية: الهدف والوقف صاروا من التوصية. الأرقام الثابتة القديمة صارت احتياطي بس.
+      ...(saved.rules && saved.rules.minStopPercent == null ? { takeProfitPercent: DEFAULT_RULES.takeProfitPercent, stopLossPercent: DEFAULT_RULES.stopLossPercent, maxTradeTimeMinutes: DEFAULT_RULES.maxTradeTimeMinutes } : {}) };
+    // متسابق جديد (مو في الملف): يبدأ برصيد البداية الحالي ويتسجّل وقت انضمامه.
+    // الباقين والمسابقة وتاريخ بدايتها ما يتغيرون.
+    const joined = [];
+    const bots = Object.fromEntries(BOTS.map(b => {
+      if (saved.bots?.[b.id]) return [b.id, { ...freshBot(rules), ...saved.bots[b.id] }];
+      joined.push(b.id);
+      return [b.id, { ...freshBot(rules), joinedAt: Date.now() }];
+    }));
     state = {
       ...state, ...saved,
-      // ترقية: قبل تقسيم الأخبار، newsIntervalMinutes كان لـ Grok. الحين صار للمواقع (رخيص) فنرجعه لساعة.
-      rules: { ...DEFAULT_RULES, ...saved.rules,
-        ...(saved.rules && saved.rules.xIntervalMinutes == null ? { newsIntervalMinutes: 60 } : {}),
-        // ترقية: الهدف والوقف صاروا من التوصية. الأرقام الثابتة القديمة صارت احتياطي بس.
-        ...(saved.rules && saved.rules.minStopPercent == null ? { takeProfitPercent: DEFAULT_RULES.takeProfitPercent, stopLossPercent: DEFAULT_RULES.stopLossPercent, maxTradeTimeMinutes: DEFAULT_RULES.maxTradeTimeMinutes } : {}) },
-      bots: Object.fromEntries(BOTS.map(b => [b.id, { ...freshBot(DEFAULT_RULES), ...(saved.bots?.[b.id] || {}) }])),
+      rules,
+      bots,
       fable: { ...freshFable(), ...(saved.fable || {}) },
       system: { ...state.system, ...saved.system, bootAt: Date.now() },
     };
     log.ok('الحالة انقرأت من db.json');
+    if (joined.length) { dirty = true; log.ok(`متسابق جديد انضم: ${joined.join('، ')} (رصيد ${rules.startingBalance}${state.competition.startedAt ? '، المسابقة شغالة وما تغيّرت' : ''})`); }
   } catch (e) {
     if (e.code !== 'ENOENT') log.err(`قراءة db.json: ${e.message}`);
     else log.info('ما فيه db.json — بداية جديدة');
@@ -1318,6 +1328,7 @@ function botSnapshot(id) {
     balanceHistory: downsample(bot.balanceHistory, 300),
     decisions: bot.decisions.slice(0, 40),
     cb: bot.cb,
+    joinedAt: bot.joinedAt || null,   // إذا انضم بعد بداية المسابقة
     blocked: blockReason(id),
     system: bot.system,
   };
@@ -1599,7 +1610,7 @@ function mcpTools() {
           universe: snap.universe,
           leaderboard: snap.leaderboard,
           bots: Object.fromEntries(Object.entries(snap.bots).map(([id, b]) => [id, {
-            name: b.def.name, balance: b.balance, equity: b.equity, openTrades: b.trades.filter(t => t.status === 'active').length,
+            name: b.def.name, joinedAt: b.joinedAt ? iso(b.joinedAt) : null, balance: b.balance, equity: b.equity, openTrades: b.trades.filter(t => t.status === 'active').length,
             blocked: b.blocked, paused: b.cb, lastRun: b.system.lastRun, lastError: b.system.lastError, lastDecision: b.decisions[0] || null,
           }])),
         };
@@ -1782,4 +1793,4 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 function start() { server.listen(PORT, main); }
 if (require.main === module) start();
 
-module.exports = { start, app, server, _internals: { BOT, maestroNow, maestroDesc, blockReason, updateRegime, weeklySummary, announceDeploy, setTelegram: t => { tg = t; }, actions, runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };
+module.exports = { start, app, server, _internals: { BOT, loadDb, saveDb, maestroNow, maestroDesc, blockReason, updateRegime, weeklySummary, announceDeploy, setTelegram: t => { tg = t; }, actions, runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };
