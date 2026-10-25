@@ -35,6 +35,7 @@ test('a contestant added mid-competition starts with the current starting balanc
   }
   assert.deepStrictEqual(st.competition, { startedAt: STARTED, locked: true }, 'competition and its start date unchanged');
   assert.strictEqual(st.rules.aiPaused, false, 'aiPaused=false survives the restart');
+  assert.strictEqual(st.rules.aiOnlyInBull, true, 'new rule gets its default without touching the others');
   assert.strictEqual(st.fable.rounds, 7);
 
   // إعادة تشغيل ثانية: وقت الانضمام ما يتغير

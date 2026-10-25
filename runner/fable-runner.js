@@ -108,7 +108,7 @@ async function main() {
       const r = await api('GET', '/api/fable/round', secret).catch(e => ({ status: 0, error: e.message }));
       if (r.status === 404) throw new Error('السيرفر رفض السر (404)');
       const j = r.json;
-      if (j && j.status === 'paused') { run.result = 'paused (aiPaused) — claude not called'; return; }
+      if (j && j.status === 'paused') { run.result = `paused (${j.mode || 'aiPaused'}) — claude not called`; return; }
       const fresh = j && j.openedAt && Date.now() - j.openedAt < 10 * 60_000;
       if (j && fresh && j.status === 'waiting') { round = j; break; }
       if (j && fresh && j.status !== 'waiting') { run.result = `round already ${j.status}`; run.roundId = j.roundId; return; }

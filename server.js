@@ -113,6 +113,7 @@ const DEFAULT_RULES = {
   strategyStopLossPercent: -3,  // وقف افتراضي لـ"الماضي" إذا الإشارة ما حددت وقف
   ruleChairMinVotes: 2,         // المدير بالكود: كم خبير لازم يقول ENTER (من 3)
   ruleChairMinConfidence: 60,   // المدير بالكود: أقل متوسط ثقة للموافقين
+  aiOnlyInBull: true,           // الموديلات تشتغل بس لما حالة السوق «صاعد» (توقف وترجع تلقائياً). يتغير حتى بعد قفل القوانين
   aiPaused: true,               // يوقف كل شغل الذكاء الاصطناعي المدفوع (OpenRouter + جولات Fable). يتغير حتى بعد قفل القوانين
 };
 
@@ -200,6 +201,50 @@ const BOT = Object.fromEntries(BOTS.map(b => [b.id, b]));
 const AI_KINDS = new Set(['ai', 'meeting', 'always']);
 const isAiBot = id => AI_KINDS.has(BOT[id]?.kind);
 const AI_PAUSED_NOTE = 'متوقف مؤقتاً لتوفير التكلفة';
+const AI_AUTO_NOTE = 'موقوف تلقائياً بسبب حالة السوق';
+// حالة الموديلات: الإيقاف اليدوي (aiPaused) يغلب كل شي، وبعده aiOnlyInBull (تشتغل بس بحالة «صاعد»)
+// «متذبذب» يغلب «صاعد» في خانة الحالة، فالسوق المتذبذب = موقوف
+function aiStatus() {
+  const r = state.rules;
+  const bucket = state.regime?.bucket || null;
+  if (r.aiPaused) return { active: false, mode: 'manual', bucket, reason: AI_PAUSED_NOTE };
+  if (r.aiOnlyInBull && bucket !== 'bull')
+    return { active: false, mode: 'auto', bucket, reason: `${AI_AUTO_NOTE} (${bucket ? BUCKET_AR[bucket] : 'ما انحسبت بعد'})` };
+  return { active: true, mode: 'on', bucket, reason: null };
+}
+const aiActive = () => aiStatus().active;
+
+// جولة Fable المفتوحة تنلغى بدون ما تنحسب "فاتته"
+function cancelWaitingFableRound() {
+  if (fableRound?.status !== 'waiting') return;
+  clearTimeout(fableTimer);
+  fableRound.status = 'paused';
+  state.fable.rounds = Math.max(0, state.fable.rounds - 1);
+  if (state.fable.lastRound) state.fable.lastRound.status = 'paused';
+}
+
+// يسجّل كل تغيّر في حالة الموديلات (فترة إيقاف: بداية، نهاية، سبب) ويرسل تيليجرام للتلقائي بس، مرة وحدة
+function syncAiStatus(now = Date.now()) {
+  const st = aiStatus();
+  const prev = state.aiStatusLast || 'on';
+  if (st.mode === prev) return st;
+  const open = [...state.aiPauses].reverse().find(p => p.end == null);
+  if (open) open.end = now;
+  if (!st.active) {
+    state.aiPauses.push({ start: now, end: null, mode: st.mode, reason: st.reason, regime: st.bucket });
+    if (state.aiPauses.length > 500) state.aiPauses.splice(0, state.aiPauses.length - 500);
+    cancelWaitingFableRound();
+  }
+  state.aiStatusLast = st.mode;
+  dirty = true;
+  saveDb();
+  log.info(`الموديلات: ${prev} → ${st.mode}${st.reason ? ` (${st.reason})` : ''}`);
+  if (st.mode === 'auto')
+    telegram().sendMessage(`⏸️ المحك: الموديلات توقفت تلقائياً — حالة السوق مو «صاعد» (${st.bucket ? BUCKET_AR[st.bucket] : 'ما انحسبت'}). صفقاتها المفتوحة تكمل لين تطلع.\n${regimeLine(state.regime)}`);
+  else if (st.mode === 'on' && prev === 'auto')
+    telegram().sendMessage(`▶️ المحك: الموديلات رجعت تلقائياً — السوق «صاعد»\n${regimeLine(state.regime)}`);
+  return st;
+}
 let tg = null;
 const telegram = () => (tg ||= createTelegram({ log }));
 
@@ -234,6 +279,8 @@ let state = {
   news: { text: null, at: null, searches: 0, error: null },
   opportunities: [],   // كل فرصة لقاها كشّاف + أصوات الاجتماع + نتيجتها الافتراضية
   regime: null,        // حالة السوق: البتكوين مقابل متوسط 200 يوم
+  aiPauses: [],        // فترات إيقاف الموديلات: { start, end, mode: auto|manual, reason, regime }
+  aiStatusLast: null,  // آخر حالة للموديلات (on / auto / manual) عشان ما تتكرر الرسائل
   telegram: { lastDeploy: null, lastWeekly: null },
   fable: freshFable(), // جولات كشّاف Fable: كم وحدة رد فيها وكم فاتته
   system: { bootAt: Date.now(), nextDecisionAt: null, universe: [] },
@@ -326,7 +373,7 @@ function todayRealized(id) {
 function blockReason(id) {
   const bot = state.bots[id];
   const r = R();
-  if (r.aiPaused && isAiBot(id)) return AI_PAUSED_NOTE;
+  if (isAiBot(id)) { const a = aiStatus(); if (!a.active) return a.reason; }
   if (bot.cb.pausedUntil && Date.now() < bot.cb.pausedUntil)
     return `موقوف مؤقتاً بعد ${r.consecutiveLossLimit} خسائر متتالية`;
   if (bot.cb.pausedUntil && Date.now() >= bot.cb.pausedUntil) {
@@ -878,7 +925,7 @@ function missFableRound() {
 // يرجع { status, body }. القرار يتطبق بالخلفية (الاجتماع ياخذ وقت)
 function submitFableDecision(body = {}) {
   const r = fableRound;
-  if (R().aiPaused) return { status: 409, body: { error: 'الموديلات موقوفة (aiPaused)' } };
+  if (!aiActive()) return { status: 409, body: { error: `الموديلات موقوفة: ${aiStatus().reason}` } };
   if (!r) return { status: 409, body: { error: 'ما فيه جولة مفتوحة' } };
   if (body.roundId !== r.id) return { status: 409, body: { error: 'الجولة مو نفس الجولة المفتوحة', roundId: r.id } };
   if (r.status !== 'waiting') return { status: 409, body: { error: `الجولة حالتها ${r.status}`, roundId: r.id } };
@@ -1158,6 +1205,7 @@ async function updateRegime(now = Date.now()) {
   state.regime = { ...r, line: regimeLine(r), at: Date.now() };
   dirty = true;
   saveDb();
+  syncAiStatus();
   if (prev && prev !== r.state) {
     log.ok(`حالة السوق تغيّرت: ${prev} → ${r.state}`);
     await telegram().sendMessage(changeMessage(r));
@@ -1180,7 +1228,7 @@ async function weeklySummary(now = Date.now()) {
   const text = [
     '📊 ملخص الأسبوع — المِحَك',
     regimeLine(state.regime),
-    R().aiPaused ? '⏸️ الموديلات موقوفة لتوفير التكلفة' : '▶️ الموديلات شغّالة',
+    aiStatus().active ? '▶️ الموديلات شغّالة' : `⏸️ الموديلات: ${aiStatus().reason}`,
     '', 'الأفضل:', ...lb.slice(0, 5).map((b, k) => row(b, k + 1)),
     '', 'الأضعف:', ...lb.slice(-3).map((b, k) => row(b, lb.length - 2 + k)),
     '', `الصفقات المفتوحة: ${open}`,
@@ -1224,9 +1272,11 @@ async function decisionCycle() {
     await ensureHodl();
     // رقم الجولة = بداية ربع الساعة. نفس الرقم لكل العائلات عشان المقارنة
     const round = Math.floor(Date.now() / (R().decisionIntervalMinutes * 60_000)) * R().decisionIntervalMinutes * 60_000;
-    if (R().aiPaused) {
+    const ai = syncAiStatus();
+    if (!ai.active) {
       // ما فيه أي طلب OpenRouter: لا أخبار ولا كشّافين ولا اجتماعات، ولا جولة Fable. الحَكَم العشوائي يكمل
-      log.info('جولة: الموديلات موقوفة (ما فيه طلبات OpenRouter)');
+      // (صفقات الموديلات المفتوحة تكمل: الهدف والوقف والمدة تنفحص مع كل سعر وكل 3 ثواني)
+      log.info(`جولة: الموديلات موقوفة — ${ai.reason} (ما فيه طلبات OpenRouter)`);
       await runRandomBot(round);
       return;
     }
@@ -1356,6 +1406,8 @@ function clientSnapshot() {
     news: state.news,
     nextDecisionAt: state.system.nextDecisionAt,
     aiPaused: !!R().aiPaused,
+    ai: aiStatus(),
+    aiPauses: state.aiPauses.slice(-50),
     regime: state.regime ? { ...state.regime, line: regimeLine(state.regime) } : null,
     maestro: maestroNow(),
     marketPeriods: MARKET_PERIODS,
@@ -1408,7 +1460,8 @@ app.all('/mcp/:secret', (req, res) => (mcpRoute ||= createMcpHandler({
 const fableAuthed = req => !!KEYS.mcp && safeEqual(req.get('x-mihak-secret') || '', KEYS.mcp);
 app.get('/api/fable/round', (req, res) => {
   if (!fableAuthed(req)) return res.status(404).end();
-  if (R().aiPaused) return res.json({ status: 'paused', now: Date.now() });
+  const ai = aiStatus();
+  if (!ai.active) return res.json({ status: 'paused', mode: ai.mode, reason: ai.reason, now: Date.now() });
   const r = fableRound;
   if (!r) return res.json({ status: 'none', now: Date.now() });
   const out = { status: r.status, roundId: r.id, openedAt: r.openedAt, deadline: r.deadline, now: Date.now() };
@@ -1453,25 +1506,27 @@ function resetAllBots() {
 const actions = {
   async setRules(input) {
     input = { ...(input || {}) };
-    const hasPause = 'aiPaused' in input;
-    const pause = input.aiPaused;
-    delete input.aiPaused;
-    if (hasPause && typeof pause !== 'boolean') return { status: 400, body: { errors: ['aiPaused: لازم true أو false'] } };
+    const bools = {};
+    for (const k of ['aiPaused', 'aiOnlyInBull']) {
+      if (!(k in input)) continue;
+      if (typeof input[k] !== 'boolean') return { status: 400, body: { errors: [`${k}: لازم true أو false`] } };
+      bools[k] = input[k];
+      delete input[k];
+    }
     const others = Object.keys(input).filter(k => k in RULE_LIMITS);
     if (state.competition.locked && others.length)
-      return { status: 423, body: { errors: ['القوانين مقفولة لأن المسابقة بدأت. ما تتغير بالنص (aiPaused بس يتغير).'] } };
-    if (hasPause && pause !== !!state.rules.aiPaused) {
+      return { status: 423, body: { errors: ['القوانين مقفولة لأن المسابقة بدأت. ما تتغير بالنص (aiPaused و aiOnlyInBull بس يتغيرون).'] } };
+    if ('aiPaused' in bools && bools.aiPaused !== !!state.rules.aiPaused) {
+      const pause = bools.aiPaused;
       state.rules.aiPaused = pause;
-      if (pause && fableRound?.status === 'waiting') {
-        // جولة Fable المفتوحة تنلغى بدون ما تنحسب "فاتته"
-        clearTimeout(fableTimer);
-        fableRound.status = 'paused';
-        state.fable.rounds = Math.max(0, state.fable.rounds - 1);
-        if (state.fable.lastRound) state.fable.lastRound.status = 'paused';
-      }
-      log.info(pause ? '⏸ الموديلات موقوفة (aiPaused)' : '▶ رجعت الموديلات (aiPaused=false)');
-      telegram().sendMessage(pause ? '⏸️ المحك: الموديلات موقوفة لتوفير التكلفة. متسابقين الكود يكملون.' : '▶️ المحك: رجعت الموديلات وجولات Fable.');
+      log.info(pause ? '⏸ الموديلات موقوفة (aiPaused)' : '▶ رجع الإيقاف اليدوي (aiPaused=false)');
+      telegram().sendMessage(pause ? '⏸️ المحك: الموديلات موقوفة يدوياً لتوفير التكلفة. متسابقين الكود يكملون.' : '▶️ المحك: انشال الإيقاف اليدوي للموديلات.');
     }
+    if ('aiOnlyInBull' in bools && bools.aiOnlyInBull !== !!state.rules.aiOnlyInBull) {
+      state.rules.aiOnlyInBull = bools.aiOnlyInBull;
+      log.info(`aiOnlyInBull = ${bools.aiOnlyInBull}`);
+    }
+    syncAiStatus();
     const errs = [];
     for (const [k, v] of Object.entries(input)) {
       if (!(k in RULE_LIMITS)) continue;
@@ -1538,7 +1593,7 @@ const actions = {
   },
 
   async refreshNews() {
-    if (R().aiPaused) return { status: 409, body: { error: 'الموديلات موقوفة (aiPaused)، فما فيه جلب أخبار' } };
+    if (!aiActive()) return { status: 409, body: { error: `الموديلات موقوفة (${aiStatus().reason})، فما فيه جلب أخبار` } };
     if (!DEMO && !KEYS.xai && !KEYS.openrouter) return { status: 400, body: { error: 'ما فيه مفتاح للأخبار' } };
     await refreshNews(true);
     dirty = true;
@@ -1602,6 +1657,8 @@ function mcpTools() {
           serverTime: iso(snap.serverTime), nextDecisionAt: iso(snap.nextDecisionAt),
           news: { at: iso(state.news.at), error: state.news.error, searches: state.news.searches },
           aiPaused: snap.aiPaused,
+          ai: snap.ai,
+          aiPauses: snap.aiPauses.map(p => ({ ...p, start: iso(p.start), end: p.end ? iso(p.end) : null })),
           regime: snap.regime,
           maestro: snap.maestro,
           marketPeriods: snap.marketPeriods,
@@ -1668,7 +1725,7 @@ function mcpTools() {
       run: () => ({ ...state.news, at: iso(state.news.at) }) },
 
     { name: 'set_rules', annotations: { title: 'تعديل القوانين', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-      description: 'Change one or more rules (numbers within their range from get_rules). Refused while the competition is locked, except aiPaused (true/false), which pauses or resumes all paid AI work (OpenRouter scouts, meetings, news, Fable rounds). Only when the owner asks.',
+      description: 'Change one or more rules (numbers within their range from get_rules). Refused while the competition is locked, except aiPaused (true/false: manual pause of all paid AI work — OpenRouter scouts, meetings, news, Fable rounds) and aiOnlyInBull (true/false: AI runs only while the market regime is bull, pausing and resuming automatically). Only when the owner asks.',
       inputSchema: obj({ rules: { type: 'object', description: 'مثل {"minConfidence": 60} أو {"aiPaused": false} لإرجاع الموديلات', additionalProperties: { type: ['number', 'boolean'] } } }, ['rules']),
       run: async ({ rules }) => result(await actions.setRules(rules)) },
 
@@ -1771,7 +1828,7 @@ async function main() {
   // مراقب السوق والملخص الأسبوعي (كل دقيقة نشيك؛ الشغل الفعلي مرة باليوم / بالأسبوع)
   setInterval(() => { updateRegime().catch(e => log.err(`حالة السوق: ${e.message}`)); weeklySummary().catch(e => log.err(`الملخص: ${e.message}`)); }, 60_000);
   try { await updateRegime(); log.ok(regimeLine(state.regime)); } catch (e) { log.err(`حالة السوق: ${e.message}`); }
-  if (R().aiPaused) log.info('⏸ الموديلات موقوفة (aiPaused): ما فيه طلبات OpenRouter ولا جولات Fable');
+  { const a = syncAiStatus(); log.info(a.active ? '▶ الموديلات شغّالة (السوق صاعد)' : `⏸ الموديلات: ${a.reason} — ما فيه طلبات OpenRouter ولا جولات Fable`); }
   announceDeploy().catch(e => log.err(`تيليجرام: ${e.message}`));
   setInterval(() => runCodeBots().catch(e => log.err(`الكود: ${e.message}`)), 60_000);  // متسابقين الكود: كل دقيقة نشوف إذا سكّرت شمعة جديدة
   setTimeout(() => runCodeBots().catch(e => log.err(`الكود: ${e.message}`)), 15_000);
@@ -1793,4 +1850,4 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 function start() { server.listen(PORT, main); }
 if (require.main === module) start();
 
-module.exports = { start, app, server, _internals: { BOT, loadDb, saveDb, maestroNow, maestroDesc, blockReason, updateRegime, weeklySummary, announceDeploy, setTelegram: t => { tg = t; }, actions, runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };
+module.exports = { start, app, server, _internals: { BOT, aiStatus, aiActive, syncAiStatus, checkTimeouts, loadDb, saveDb, maestroNow, maestroDesc, blockReason, updateRegime, weeklySummary, announceDeploy, setTelegram: t => { tg = t; }, actions, runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };

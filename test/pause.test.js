@@ -37,20 +37,22 @@ test('a paused round calls no news, no scouts and opens no Fable round; the rand
 });
 
 test('aiPaused can be flipped even when the rules are locked, and each flip sends one Telegram line', async () => {
+  S.state().rules.aiOnlyInBull = false;   // هالاختبار عن الإيقاف اليدوي بس
   S.state().competition.locked = true;
   const blocked = await S.actions.setRules({ minConfidence: 60 });
   assert.strictEqual(blocked.status, 423);
   const off = await S.actions.setRules({ aiPaused: false });
   assert.strictEqual(off.status, 200);
   assert.strictEqual(S.state().rules.aiPaused, false);
-  assert.match(sent.at(-1), /رجعت الموديلات/);
+  assert.match(sent.at(-1), /انشال الإيقاف اليدوي/);
   const bad = await S.actions.setRules({ aiPaused: 'yes' });
   assert.strictEqual(bad.status, 400);
   await S.actions.setRules({ aiPaused: true });
   assert.match(sent.at(-1), /موقوفة/);
   await S.actions.setRules({ aiPaused: true });          // نفس القيمة: ما فيه رسالة ثانية
-  assert.strictEqual(sent.filter(t => /موقوفة/.test(t)).length, 1);
+  assert.strictEqual(sent.filter(t => /موقوفة يدوياً/.test(t)).length, 1);
   S.state().competition.locked = false;
+  S.state().rules.aiOnlyInBull = true;
 });
 
 // شموع البتكوين اليومية: بداية نختارها، ثم مسار لآخر الأيام

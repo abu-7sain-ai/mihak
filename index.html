@@ -878,7 +878,8 @@ function currentView() { return document.querySelector('.view.active')?.id?.repl
 
 function renderAll() {
   if (!G || !S) return;
-  $('regime-line').textContent = (G.regime?.line || 'حالة السوق: ما انحسبت بعد') + (G.aiPaused ? ' · ⏸️ الموديلات موقوفة لتوفير التكلفة' : '');
+  const AI_TEXT = { on: '🤖 الموديلات: شغّالة', auto: '⏸️ الموديلات: موقوفة تلقائياً بسبب حالة السوق', manual: '⏸️ الموديلات: موقوفة يدوياً' };
+  $('regime-line').textContent = (G.regime?.line || 'حالة السوق: ما انحسبت بعد') + ' · ' + (AI_TEXT[G.ai?.mode] || (G.aiPaused ? AI_TEXT.manual : AI_TEXT.on));
   renderHeader();
   const cur = currentView();
   $('bot-chips').style.display = (cur === 'competition' || cur === 'settings') ? 'none' : 'flex';
@@ -929,6 +930,7 @@ function renderRegimeCard() {
   const r = G.regime, m = G.maestro, mp = G.marketPeriods;
   const rows = [];
   if (r) rows.push(`<div style="margin-bottom:6px"><strong>${esc(r.line || '')}</strong>${r.adx14 != null ? ` · ADX ${num(fmt(r.adx14, 1))}` : ''} <span class="form-hint">(آخر إغلاق ${esc(r.asOf || '')})</span></div>`);
+  if (G.ai) rows.push(`<div style="margin-bottom:6px">${G.ai.active ? '<span class="tag ok">🤖 الموديلات شغّالة</span>' : `<span class="tag no">⏸️ ${G.ai.mode === 'manual' ? 'الموديلات موقوفة يدوياً' : 'الموديلات موقوفة تلقائياً بسبب حالة السوق'}</span>`}${G.rules?.aiOnlyInBull ? ' <span class="form-hint">(تشتغل بس لما السوق «صاعد»)</span>' : ''}</div>`);
   if (m && m.version) rows.push(`<div style="margin-bottom:8px">المايسترو (${esc(m.version)}) بحالة <strong>${esc(BUCKET_LABEL[m.bucket] || '—')}</strong>: ${m.onNames && m.onNames.length ? m.onNames.map(n => `<span class="tag ok">${esc(n)}</span>`).join(' ') : '<span class="tag no">كاش — ولا استراتيجية مؤهلة</span>'}</div>`);
   if (mp && mp.periods) {
     rows.push(`<div class="form-hint" style="margin:6px 0 4px">فترات السوق بنظرة لورا (للفهم بس، مو للتداول) — لين ${esc(mp.dataEnd)}</div>`);
