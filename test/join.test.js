@@ -11,7 +11,8 @@ const { _internals: S } = require('../server');
 
 const STARTED = Date.UTC(2026, 9, 22, 12, 0);
 test('a contestant added mid-competition starts with the current starting balance and its own join time; nothing else changes', async () => {
-  const ids = Object.keys(S.BOT).filter(id => id !== 'maestro');
+  const NEW = ['maestro', 'code-trend200-vol', 'code-breakout-funding'];
+  const ids = Object.keys(S.BOT).filter(id => !NEW.includes(id));
   const saved = {
     version: 3,
     rules: { ...S.state().rules, startingBalance: 2000, aiPaused: false },
@@ -23,11 +24,15 @@ test('a contestant added mid-competition starts with the current starting balanc
   const before = Date.now();
   S.loadDb();
   const st = S.state();
+  for (const id of NEW) {
+    const m = st.bots[id];
+    assert.ok(m, id);
+    assert.strictEqual(m.balance, 2000, `${id}: current starting balance, not the default 1000`);
+    assert.strictEqual(m.balanceHistory[0].balance, 2000);
+    assert.ok(m.joinedAt >= before && m.joinedAt <= Date.now(), `${id}: own join time`);
+    assert.strictEqual(m.trades.length, 0);
+  }
   const m = st.bots.maestro;
-  assert.strictEqual(m.balance, 2000, 'current starting balance, not the default 1000');
-  assert.strictEqual(m.balanceHistory[0].balance, 2000);
-  assert.ok(m.joinedAt >= before && m.joinedAt <= Date.now(), 'own join time');
-  assert.strictEqual(m.trades.length, 0);
   for (const id of ids) {
     assert.strictEqual(st.bots[id].balance, 1234, `${id} untouched`);
     assert.strictEqual(st.bots[id].trades[0].id, `t-${id}`);

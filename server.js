@@ -19,6 +19,8 @@ const strategies = require('./lib/strategies');
 const strategySpec = require('./lib/strategy-spec');
 const { computeRegime, regimeLine, changeMessage, BUCKET_AR } = require('./lib/regime');
 const { buildMaestro, MAESTRO_MAPPING } = require('./lib/maestro');
+const trendvol = require('./lib/trendvol');
+const { createFunding, fundingAllows, THRESHOLD_8H } = require('./lib/funding');
 const { createTelegram } = require('./lib/telegram');
 strategies.byId['fable-discovery'] = require('./lib/fable-discovery');   // اكتشاف Fable: من بحثه على 2021–2024، مجمّد
 
@@ -184,6 +186,10 @@ const BOTS = [
     desc: 'يشتري لما RSI(2) على 4 ساعات ينزل تحت 10 والسعر فوق EMA200 الطالع (نزلة قصيرة داخل اتجاه صاعد). يطلع لما الإغلاق فوق SMA(5)، أو على وقف 2.5 ATR، أو بعد 5 أيام.' },
   { id: 'code-bollinger', name: 'الكود · حدود البولنجر', kind: 'code', strategy: 'bollinger-4h', team: 'code',
     desc: 'يشتري لما الإغلاق ينزل تحت حد بولنجر السفلي (20، 2) والبتكوين فوق متوسط 200 يوم. يطلع عند الخط الأوسط، أو على وقف 2.5 ATR، أو بعد 5 أيام.' },
+  { id: 'code-trend200-vol', name: 'الكود · البتكوين فوق متوسط 200 + تحكم بالتذبذب', kind: 'code', runner: 'trendvol', strategy: 'trendvol', team: 'code',
+    desc: 'بتكوين بس، يقرر مرة باليوم على آخر شمعة يومية مغلقة: إذا الإغلاق فوق متوسط 200 يوم يمسك بتكوين، غير كذا كاش 100%. الحجم حسب التذبذب: الوزن = أقل من 1 و 0.40 ÷ التذبذب السنوي (انحراف آخر 30 عائد يومي × √365)، يعني هدفه تذبذب 40% بالسنة. يعيد التوزيع بس إذا الفرق أكثر من 10 نقاط (عشان الرسوم). ما له هدف ولا وقف ولا مدة. انضم والمسابقة شغالة.' },
+  { id: 'code-breakout-funding', name: 'الكود · بريك أوت + فلتر التمويل', kind: 'code', strategy: 'base-breakout', entryFilter: 'funding', team: 'code',
+    desc: 'نسخة طبق الأصل من «الكود · بريك أوت بدون بتكوين» (نفس الإشارة والأرقام والخروج)، بس ما يدخل صفقة جديدة إذا معدل التمويل للعقد الدائم أعلى من 0.03% لكل 8 ساعات (3 أضعاف العادي). العملة اللي ما لها عقد دائم: تمويل البتكوين. قراءة بس، ما فيه أي تداول مشتقات. إذا ما انقرت البيانات: ما يدخل. الخروج ما ينمنع أبداً. انضم والمسابقة شغالة.' },
   { id: 'code-dca', name: 'الكود · شراء دوري ذكي', kind: 'code', runner: 'dca', strategy: 'dca', team: 'code',
     desc: 'كل أسبوع يشتري BTC و ETH بـ$30 لكل وحدة، و$60 إذا العملة تحت متوسط 50 يوم. الميزانية تكفي 8 أسابيع حتى لو كل الشراء مضاعف. ما يبيع وما له وقف.' },
   { id: 'fable-discovery', name: 'اكتشاف Fable', kind: 'code', strategy: 'fable-discovery', team: 'code',
@@ -201,6 +207,10 @@ const BOT = Object.fromEntries(BOTS.map(b => [b.id, b]));
 const AI_KINDS = new Set(['ai', 'meeting', 'always']);
 const isAiBot = id => AI_KINDS.has(BOT[id]?.kind);
 const AI_PAUSED_NOTE = 'متوقف مؤقتاً لتوفير التكلفة';
+let funding = null;               // lib/funding.js (ينصنع وقت التشغيل)
+// المتسابقين اللي ينقارنون مع البتكوين من وقت انضمامهم (سعر البتكوين لحظة الانضمام)
+const JOIN_COMPARE = ['code-trend200-vol', 'code-breakout-funding'];
+let fundingProbe = null;          // نتيجة تجربة المصادر من هالسيرفر
 const AI_AUTO_NOTE = 'موقوف تلقائياً بسبب حالة السوق';
 // حالة الموديلات: الإيقاف اليدوي (aiPaused) يغلب كل شي، وبعده aiOnlyInBull (تشتغل بس بحالة «صاعد»)
 // «متذبذب» يغلب «صاعد» في خانة الحالة، فالسوق المتذبذب = موقوف
@@ -490,6 +500,10 @@ function releaseSymbol(symbol) {
 
 // ── تحديث الأسعار وفحص الهدف والوقف ─────────────────────────────────────────
 function onPrice(symbol, price) {
+  if (symbol === 'BTCUSDT') {
+    state.system.btcPrice = price;
+    for (const id of JOIN_COMPARE) { const x = state.bots[id]; if (x && x.joinedAt && x.btcAtJoin == null) { x.btcAtJoin = price; dirty = true; } }
+  }
   for (const b of BOTS) {
     for (const t of activeTrades(b.id)) {
       if (t.symbol !== symbol) continue;
@@ -999,7 +1013,7 @@ async function runCodeBots(now = Date.now()) {
   codeRunning = true;
   try {
     for (const def of BOTS.filter(b => b.kind === 'code')) {
-      const run = def.runner === 'rank' ? runRankBot : def.runner === 'dca' ? runDcaBot : runCodeBot;
+      const run = def.runner === 'rank' ? runRankBot : def.runner === 'dca' ? runDcaBot : def.runner === 'trendvol' ? runTrendVolBot : runCodeBot;
       try { await run(def, now); }
       catch (e) { state.bots[def.id].system.lastError = e.message; log.err(`[${def.id}] ${e.message}`); }
     }
@@ -1073,6 +1087,87 @@ async function runRankBot(def, now) {
   });
   bot.system.lastRun = now; bot.system.lastError = null;
   dirty = true; saveDb();
+}
+
+// ── فلتر التمويل ────────────────────────────────────────────────────────────
+async function fundingCheck(sym) {
+  if (!funding) return { allow: false, reason: 'مصدر التمويل ما اشتغل' };
+  try {
+    const value = await funding.get(sym);
+    return { ...fundingAllows(value, THRESHOLD_8H), value };
+  } catch (e) {
+    return { allow: false, reason: `ما انقرت بيانات التمويل: ${String(e.message).slice(0, 100)}`, source: funding.source() };
+  }
+}
+
+// ── «البتكوين فوق متوسط 200 + تحكم بالتذبذب» ───────────────────────────────
+// مركز واحد على BTCUSDT: نشتري ونزيد ونبيع جزء حسب الوزن المطلوب. البيع الجزئي ينسجل كصفقة مسكّرة
+function sellPart(def, trade, fraction, price, reason) {
+  const r = R();
+  const bot = state.bots[def.id];
+  if (fraction >= 0.999) { closeTrade(trade, reason, price); return; }
+  const qty = trade.qty * fraction, amount = trade.amount * fraction;
+  const exit = acc.exitFill(reason, price, trade, r);
+  const { net, feeOut } = acc.liquidationValue(qty, exit, r);
+  const pnl = net - amount;
+  trade.qty -= qty; trade.amount -= amount;
+  bot.balance += net;
+  bot.trades.unshift({
+    id: `trade-${crypto.randomUUID()}`, bot: def.id, symbol: trade.symbol, amount, qty, entryPrice: trade.entryPrice,
+    marketPriceAtEntry: trade.marketPriceAtEntry, takeProfit: null, stopLoss: 0, tpPercent: null, slPercent: -100, maxTimeMs: null,
+    status: pnl > 0 ? 'won' : 'lost', startTime: trade.startTime, currentPrice: exit, closePrice: exit, closeTime: Date.now(),
+    closeReason: reason, pnlUSD: acc.round(pnl), pnlPercent: acc.round(pnl / amount * 100), feesUSD: acc.round(feeOut, 4),
+    confidence: null, signalReason: 'بيع جزئي (إعادة توزيع)', strategy: 'trendvol',
+  });
+  log.trade(`SELL part [${def.id}] ${trade.symbol} ${(fraction * 100).toFixed(1)}% | ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`);
+  dirty = true;
+}
+
+async function runTrendVolBot(def, now) {
+  const bot = state.bots[def.id];
+  const day = strategies.DAY;
+  const lastStart = Math.floor(now / day) * day - day;
+  bot.codeState ??= { lastCandle: {} };
+  if ((bot.codeState.lastDay ?? -1) >= lastStart) return;          // مرة وحدة لكل يوم مغلق
+  const daily = (await market.klines('BTCUSDT', '1d', 400)).filter(c => c.t + day <= now);
+  if (!daily.length || daily.at(-1).t !== lastStart) return;        // شمعة اليوم ما وصلت بعد: نجرب الدقيقة الجاية
+  const tw = trendvol.targetWeight(daily.map(c => c.close));
+  const price = await market.price('BTCUSDT');
+  const trade = activeTrades(def.id).find(t => t.symbol === 'BTCUSDT');
+  const posValue = trade ? acc.liquidationValue(trade.qty, price, R()).net : 0;
+  const equity = bot.balance + posValue;
+  const current = equity > 0 ? posValue / equity : 0;
+  let action = 'WAIT', note = '';
+  if (trendvol.needsRebalance(current, tw.weight)) {
+    if (tw.weight > current) {
+      const amount = Math.min(bot.balance, (tw.weight - current) * equity);
+      if (amount >= 1) {
+        if (trade) {
+          const { fill, qty, feeIn } = acc.openPosition(amount, price, R());
+          trade.entryPrice = (trade.entryPrice * trade.qty + fill * qty) / (trade.qty + qty);
+          trade.qty += qty; trade.amount += amount; trade.feesUSD = acc.round(trade.feesUSD + feeIn, 4);
+          bot.balance -= amount;
+        } else {
+          const res = await enterTrade(def.id, { symbol: 'BTCUSDT', reason: tw.reason, tpPercent: null, slPercent: -100, maxMinutes: null, amount, force: true, extra: { strategy: 'trendvol' } });
+          if (res.error) note = res.error;
+        }
+        action = 'BUY';
+      }
+    } else if (trade) {
+      sellPart(def, trade, (current - tw.weight) / current, price, tw.weight === 0 ? 'signal-exit' : 'rebalance');
+      action = 'SELL';
+    }
+  }
+  bot.codeState.lastDay = lastStart;
+  bot.system.lastRun = now; bot.system.lastError = null;
+  const pct = v => `${(v * 100).toFixed(1)}%`;
+  recordDecision(def.id, {
+    action, symbol: 'BTCUSDT',
+    reason: `${tw.reason} · الإغلاق ${Math.round(tw.close).toLocaleString('en-US')} · متوسط 200: ${tw.sma200 ? Math.round(tw.sma200).toLocaleString('en-US') : '—'} · التذبذب ${tw.vol ? pct(tw.vol) : '—'} · الوزن المطلوب ${pct(tw.weight)} · الحالي ${pct(current)}${action === 'WAIT' ? ' (الفرق أقل من 10 نقاط)' : ''}${note ? ' · ' + note : ''}`,
+    weight: { target: tw.weight, before: current, vol: tw.vol, sma200: tw.sma200, close: tw.close },
+  });
+  dirty = true;
+  saveDb();
 }
 
 // شراء دوري ذكي: كل أسبوع BTC و ETH، الضعف إذا تحت متوسط 50 يوم. مركز واحد لكل عملة يكبر، بدون وقف وبدون بيع
@@ -1168,6 +1263,15 @@ async function runCodeBot(def, now) {
     try { price = await market.price(s.sym); } catch (e) { notes.push(`${s.sym}: ${e.message}`); continue; }
     const slPercent = s.stop != null ? (s.stop / price - 1) * 100 : -99;
     if (slPercent >= 0) { notes.push(`${s.sym}: السعر نزل تحت الوقف قبل الدخول`); continue; }
+    if (def.entryFilter === 'funding') {
+      const f = await fundingCheck(s.sym);
+      if (!f.allow) {
+        (bot.fundingSkips ??= []).unshift({ at: now, coin: s.sym, rate8h: f.value?.rate8h ?? null, source: f.value?.source ?? f.source ?? null, readFrom: f.value?.symbol ?? null, reason: f.reason });
+        if (bot.fundingSkips.length > 500) bot.fundingSkips.length = 500;
+        notes.push(`${s.sym}: ما دخل — ${f.reason}${f.value ? ` (${f.value.source}${f.value.fallbackBtc ? '، تمويل البتكوين' : ''})` : ''}`);
+        continue;
+      }
+    }
     const res = await enterTrade(def.id, {
       symbol: s.sym, reason: s.sub ? `إشارة ${STRAT_NAME(s.sub)} (من المايسترو)` : `إشارة ${strat.nameAr}`, tpPercent: null, slPercent,
       maxMinutes: s.hold ? s.hold * tfMs / 60_000 : null,   // أطول مدة (إذا الاستراتيجية حددتها)
@@ -1379,6 +1483,9 @@ function botSnapshot(id) {
     decisions: bot.decisions.slice(0, 40),
     cb: bot.cb,
     joinedAt: bot.joinedAt || null,   // إذا انضم بعد بداية المسابقة
+    // مقارنة مع شراء البتكوين والاحتفاظ من وقت الانضمام نفسه
+    hodlSinceJoinPct: bot.joinedAt && bot.btcAtJoin && state.system.btcPrice ? acc.round((state.system.btcPrice / bot.btcAtJoin - 1) * 100) : null,
+    ...(bot.fundingSkips ? { fundingSkips: bot.fundingSkips.slice(0, 50), fundingSource: fundingProbe?.source || null } : {}),
     blocked: blockReason(id),
     system: bot.system,
   };
@@ -1667,7 +1774,7 @@ function mcpTools() {
           universe: snap.universe,
           leaderboard: snap.leaderboard,
           bots: Object.fromEntries(Object.entries(snap.bots).map(([id, b]) => [id, {
-            name: b.def.name, joinedAt: b.joinedAt ? iso(b.joinedAt) : null, balance: b.balance, equity: b.equity, openTrades: b.trades.filter(t => t.status === 'active').length,
+            name: b.def.name, joinedAt: b.joinedAt ? iso(b.joinedAt) : null, hodlSinceJoinPct: b.hodlSinceJoinPct, balance: b.balance, equity: b.equity, openTrades: b.trades.filter(t => t.status === 'active').length,
             blocked: b.blocked, paused: b.cb, lastRun: b.system.lastRun, lastError: b.system.lastError, lastDecision: b.decisions[0] || null,
           }])),
         };
@@ -1798,7 +1905,25 @@ async function loadUniverse() {
   log.ok(`العملات المسموحة: ${universe.length}`);
 }
 
+// متسابق التمويل ينضاف بس إذا فيه مصدر تمويل يشتغل من هالسيرفر (أو كان منضم من قبل)
+async function setupFunding() {
+  funding = createFunding({ log });
+  fundingProbe = await funding.probe();
+  const id = 'code-breakout-funding';
+  let inDb = false;
+  try { inDb = !!JSON.parse(fs.readFileSync(DB_PATH, 'utf-8')).bots?.[id]; } catch { /* ما فيه ملف */ }
+  if (fundingProbe.ok) log.ok(`مصدر التمويل: ${fundingProbe.source} (${fundingProbe.tried.map(t => `${t.source} ${t.ok ? 'شغّال' : 'ما اشتغل: ' + t.error}`).join(' · ')})`);
+  else log.warn(`ولا مصدر تمويل اشتغل من السيرفر: ${fundingProbe.tried.map(t => `${t.source}: ${t.error}`).join(' · ')}`);
+  if (!fundingProbe.ok && !inDb) {
+    const k = BOTS.findIndex(b => b.id === id);
+    if (k >= 0) BOTS.splice(k, 1);
+    delete BOT[id];
+    log.warn(`${id} ما انضاف لأن ولا مصدر تمويل يشتغل من Railway`);
+  }
+}
+
 async function main() {
+  try { await setupFunding(); } catch (e) { log.err(`التمويل: ${e.message}`); }
   log.info(`المِحَك (Mihak) — ${DEMO ? 'وضع التجربة (أسعار وهمية)' : 'أسعار Binance الحية (تداول ورقي)'}`);
   loadDb();
   const coins = JSON.parse(fs.readFileSync(path.join(__dirname, 'halal-coins.json'), 'utf-8')).coins;
@@ -1850,4 +1975,4 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 function start() { server.listen(PORT, main); }
 if (require.main === module) start();
 
-module.exports = { start, app, server, _internals: { BOT, aiStatus, aiActive, syncAiStatus, checkTimeouts, loadDb, saveDb, maestroNow, maestroDesc, blockReason, updateRegime, weeklySummary, announceDeploy, setTelegram: t => { tg = t; }, actions, runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };
+module.exports = { start, app, server, _internals: { BOT, BOTS, setupFunding, setFunding: f => { funding = f; }, runTrendVolBot, fundingCheck, aiStatus, aiActive, syncAiStatus, checkTimeouts, loadDb, saveDb, maestroNow, maestroDesc, blockReason, updateRegime, weeklySummary, announceDeploy, setTelegram: t => { tg = t; }, actions, runCodeBots, openFableRound, submitFableDecision, missFableRound, fairComparison, fableSummary, fableRound: () => fableRound, clampPlan, state: () => state, enterTrade, closeTrade, onPrice, handleStrategySignal, clientSnapshot, decisionCycle, meetingStats, closeOpportunity, setMarket: m => { market = m; }, setUniverse: u => { universe = u; } } };
