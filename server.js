@@ -1477,6 +1477,8 @@ function botSnapshot(id) {
     balance: acc.round(bot.balance),
     equity: acc.round(equity),
     stats,
+    // الصفقات المسكّرة بس (بعد الرسوم): رابحة > 0، خاسرة <= 0
+    wins: stats.wins, losses: stats.losses, winRatePct: stats.winRatePct,
     todayRealized: acc.round(todayRealized(id)),
     trades: [...active, ...closed],
     balanceHistory: downsample(bot.balanceHistory, 300),
@@ -1500,6 +1502,7 @@ function clientSnapshot() {
       returnPct: ret(b.id), maxDrawdown: bots[b.id].stats.maxDrawdown,
       returnToDrawdown: bots[b.id].stats.returnToDrawdown, trades: bots[b.id].stats.closedTrades,
       winRate: bots[b.id].stats.winRate, feesPaid: bots[b.id].stats.feesPaid,
+      wins: bots[b.id].wins, losses: bots[b.id].losses, winRatePct: bots[b.id].winRatePct,
       aiCostUSD: bots[b.id].stats.aiCostUSD, equity: bots[b.id].equity,
       beatsRandom: b.referee ? null : ret(b.id) > ret('random'),
       beatsHodl: b.referee ? null : ret(b.id) > ret('hodl'),
