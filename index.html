@@ -447,15 +447,27 @@ a { color: inherit; text-decoration: none; }
 .comp-progress { height: 5px; border-radius: 99px; background: var(--s3); margin-top: 10px; overflow: hidden; }
 .comp-progress > div { height: 100%; background: var(--accent); }
 .lb-row {
-  display: grid; grid-template-columns: 28px 1fr 56px 56px 64px 96px; gap: 10px; align-items: center;
+  display: grid; grid-template-columns: 28px 1fr 64px 64px 84px 96px; gap: 10px; align-items: center;
   padding: 12px 0; border-bottom: 1px solid var(--bd);
 }
 .lb-row:last-child { border-bottom: none; }
+#lb-head .lb-row { border-bottom: 1px solid var(--bd); }
 .lb-head { padding: 0 0 6px; font-size: .66rem; color: var(--muted); font-weight: 700; cursor: default; }
 .lb-wl { font-family: var(--mono); font-size: .8rem; text-align: center; direction: ltr; unicode-bidi: isolate; }
 .lb-head .lb-wl { font-family: inherit; font-size: .66rem; direction: rtl; }
 .lb-note { font-size: .66rem; color: var(--muted); margin-top: 6px; }
-@media (max-width: 640px) { .lb-row { grid-template-columns: 22px 1fr 36px 36px 44px 76px; gap: 6px; } }
+.lb-sort { white-space: nowrap; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; border-radius: 4px; padding: 2px 3px; }
+.lb-sort:hover { color: var(--text, #fff); background: var(--s3); }
+.lb-sort.on { color: var(--accent); }
+.lb-head .lb-sort.lb-wl { display: block; }
+.lb-subsort { font-family: inherit; font-weight: 400; gap: 2px 6px; align-items: center; margin: 0 0 6px; }
+@media (max-width: 640px) {
+  .lb-sort { padding: 6px 3px; }
+  .lb-head .lb-sort.lb-wl { white-space: normal; padding: 6px 0; }
+  .lb-row { grid-template-columns: 16px 1fr 28px 28px 38px 66px; gap: 4px; }
+  .lb-wl { font-size: .72rem; }
+  .lb-ret { font-size: .95rem; }
+}
 .lb-rank { font-family: var(--mono); font-weight: 700; color: var(--muted); text-align: center; }
 .lb-name { font-weight: 700; font-size: .9rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .lb-name .sw { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
@@ -948,6 +960,101 @@ function renderRegimeCard() {
   $('regime-card').innerHTML = rows.join('') || '<div class="form-hint">ما فيه بيانات للحين.</div>';
 }
 
+// ── الترتيب: كل عنوان عمود يرتّب (أول ضغطة من الأعلى للأقل، الثانية بالعكس) ──
+// الفاضي («—» / null) دايماً تحت. الاختيار ينحفظ بالمتصفح. الافتراضي = ترتيب السيرفر (العائد).
+const isAiKind = id => ['ai', 'meeting', 'always'].includes(G.bots[id]?.def.kind);
+const LB_SORT = {
+  name:        { label: 'المتسابق',     text: true, get: r => r.name },
+  wins:        { label: 'الرابحة',      get: r => r.wins },
+  losses:      { label: 'الخاسرة',      get: r => r.losses },
+  winRatePct:  { label: 'نسبة الربح',   get: r => r.winRatePct },
+  returnPct:   { label: 'العائد',       get: r => r.returnPct },
+  maxDrawdown: { label: 'تراجع',        get: r => r.maxDrawdown },
+  returnToDrawdown: { label: 'عائد/تراجع', get: r => r.returnToDrawdown },
+  trades:      { label: 'الصفقات',      get: r => (r.id === 'hodl' ? null : r.trades) },
+  feesPaid:    { label: 'الرسوم',       get: r => r.feesPaid },
+  aiCostUSD:   { label: 'ذكاء اصطناعي', get: r => (isAiKind(r.id) ? r.aiCostUSD : null) },
+  equity:      { label: 'رأس المال',    get: r => r.equity },
+  beatsRandom: { label: 'يغلب العشوائي', get: r => (r.beatsRandom == null ? null : +r.beatsRandom) },
+  beatsHodl:   { label: 'يغلب الاحتفاظ', get: r => (r.beatsHodl == null ? null : +r.beatsHodl) },
+};
+const LB_SORT_KEY = 'mihak.lbSort';
+let lbSort = { key: 'returnPct', dir: 'desc' };
+let lbHeadHtml = '';
+try { const s = JSON.parse(localStorage.getItem(LB_SORT_KEY)); if (s && LB_SORT[s.key] && (s.dir === 'asc' || s.dir === 'desc')) lbSort = s; } catch {}
+
+function lbSortClick(key) {
+  // الأسماء: أول ضغطة أبجدي (ا ← ي)؛ الباقي: أول ضغطة من الأعلى للأقل
+  const first = LB_SORT[key].text ? 'asc' : 'desc';
+  lbSort = lbSort.key === key ? { key, dir: lbSort.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: first };
+  try { localStorage.setItem(LB_SORT_KEY, JSON.stringify(lbSort)); } catch {}
+  renderLeaderboard();
+}
+
+function sortedLeaderboard(rows) {
+  const { get, text } = LB_SORT[lbSort.key];
+  const sgn = lbSort.dir === 'asc' ? 1 : -1;
+  const empty = v => v == null || v === '' || (typeof v === 'number' && !Number.isFinite(v));
+  return rows.map((r, i) => ({ r, i, v: get(r) })).sort((a, b) => {
+    const ea = empty(a.v), eb = empty(b.v);
+    if (ea || eb) return ea === eb ? a.i - b.i : ea ? 1 : -1;      // الفاضي تحت بالاتجاهين
+    const c = text ? String(a.v).localeCompare(String(b.v), 'ar') : a.v - b.v;
+    return c ? c * sgn : a.i - b.i;                                  // التعادل: ترتيب السيرفر
+  });
+}
+
+function lbHead(key, cls = '', style = '') {
+  const on = lbSort.key === key;
+  return `<span class="lb-sort ${cls}${on ? ' on' : ''}" data-sort="${key}" role="button" tabindex="0"${style ? ` style="${style}"` : ''}>${LB_SORT[key].label}${on ? (lbSort.dir === 'desc' ? ' ▼' : ' ▲') : ''}</span>`;
+}
+
+function renderLeaderboard() {
+  const subs = ['maxDrawdown', 'returnToDrawdown', 'trades', 'feesPaid', 'aiCostUSD', 'equity', 'beatsRandom', 'beatsHodl'];
+  const head = `<div class="lb-meta lb-subsort">رتّب حسب: ${subs.map(k => lbHead(k)).join('')}</div><div class="lb-row lb-head"><div></div><div>${lbHead('name')}</div>${lbHead('wins', 'lb-wl')}${lbHead('losses', 'lb-wl')}${lbHead('winRatePct', 'lb-wl')}${lbHead('returnPct', '', 'display:block;text-align:left')}</div>`;
+  // العنوان ثابت (ينبني من جديد بس إذا تغيّر الترتيب) عشان الضغطة ما تضيع مع تحديث الأسعار كل ثانية
+  const box = $('leaderboard');
+  if (!box.querySelector('#lb-head')) { box.innerHTML = '<div id="lb-head"></div><div id="lb-body"></div>'; lbHeadHtml = ''; }
+  if (lbHeadHtml !== head) { $('lb-head').innerHTML = head; lbHeadHtml = head; }
+  $('lb-body').innerHTML = sortedLeaderboard(G.leaderboard).map(({ r, i }) => {
+    const b = G.bots[r.id];
+    const col = r.returnPct >= 0 ? 'var(--accent)' : 'var(--danger)';
+    const tags = r.referee ? '<span class="tag">حَكَم</span>' :
+      `<span class="tag ${r.beatsRandom ? 'ok' : 'no'}">${r.beatsRandom ? '✓' : '✗'} العشوائي</span>
+       <span class="tag ${r.beatsHodl ? 'ok' : 'no'}">${r.beatsHodl ? '✓' : '✗'} الاحتفاظ</span>`;
+    const small = !r.referee && r.trades < 30 ? '<span class="tag">عينة صغيرة</span>' : '';
+    const blocked = b.blocked && r.id !== 'hodl' ? `<span title="${esc(b.blocked)}">⏸ ${esc(b.blocked)}</span>` : '';
+    // الرقم = المركز الرسمي (حسب العائد) مهما كان الترتيب المختار
+    return `<div class="lb-row" onclick="selectBot('${r.id}');goView('dashboard')" style="cursor:pointer">
+      <div class="lb-rank">${i + 1}</div>
+      <div>
+        <div class="lb-name"><span class="sw" style="background:${BOT_COLORS[r.id]}"></span>${esc(r.name)} ${tags} ${small}</div>
+        <div class="lb-meta">
+          <span>تراجع ${num(fmt(r.maxDrawdown) + '%')}</span>
+          <span>عائد/تراجع ${r.returnToDrawdown == null ? '—' : num(fmt(r.returnToDrawdown))}</span>
+          ${r.id === 'hodl' ? '' : `<span>${num(r.trades)} صفقة مسكّرة</span>`}
+          <span>رسوم ${num('$' + fmt(r.feesPaid))}</span>
+          ${isAiKind(r.id) ? `<span>ذكاء اصطناعي ${num('$' + fmt(r.aiCostUSD, 2))}</span>` : ''}
+          ${blocked}
+        </div>
+      </div>
+      <div class="lb-wl" style="color:var(--accent)">${r.wins}</div>
+      <div class="lb-wl" style="color:var(--danger)">${r.losses}</div>
+      <div class="lb-wl">${r.winRatePct == null ? '—' : r.winRatePct + '%'}</div>
+      <div><div class="lb-ret" style="color:${col}">${sign(r.returnPct)}%</div><div class="lb-eq">$${fmt(r.equity)}</div></div>
+    </div>`;
+  }).join('');
+}
+
+// ضغطة (أو لمسة على الجوال) على أي عنوان ترتيب
+document.addEventListener('click', e => {
+  const h = e.target.closest('#leaderboard [data-sort]');
+  if (h) { e.stopPropagation(); lbSortClick(h.dataset.sort); }
+});
+document.addEventListener('keydown', e => {
+  const h = (e.key === 'Enter' || e.key === ' ') && e.target.closest?.('#leaderboard [data-sort]');
+  if (h) { e.preventDefault(); lbSortClick(h.dataset.sort); }
+});
+
 function renderCompetition() {
   renderRegimeCard();
   const c = G.competition;
@@ -964,35 +1071,7 @@ function renderCompetition() {
       <span class="muted">النتائج هنا للتجربة بس. لما يكون كل شي جاهز (ومنه استراتيجية "الماضي")، ابدأ المسابقة الرسمية من الإعدادات: تتصفّر الأرقام وتنقفل القوانين.</span></div>`;
   }
 
-  $('leaderboard').innerHTML = `<div class="lb-row lb-head"><div></div><div>المتسابق</div>
-      <div class="lb-wl">الرابحة</div><div class="lb-wl">الخاسرة</div><div class="lb-wl">نسبة الربح</div><div style="text-align:left">العائد</div></div>` +
-    G.leaderboard.map((r, i) => {
-    const b = G.bots[r.id];
-    const col = r.returnPct >= 0 ? 'var(--accent)' : 'var(--danger)';
-    const tags = r.referee ? '<span class="tag">حَكَم</span>' :
-      `<span class="tag ${r.beatsRandom ? 'ok' : 'no'}">${r.beatsRandom ? '✓' : '✗'} العشوائي</span>
-       <span class="tag ${r.beatsHodl ? 'ok' : 'no'}">${r.beatsHodl ? '✓' : '✗'} الاحتفاظ</span>`;
-    const small = !r.referee && r.trades < 30 ? '<span class="tag">عينة صغيرة</span>' : '';
-    const blocked = b.blocked && r.id !== 'hodl' ? `<span title="${esc(b.blocked)}">⏸ ${esc(b.blocked)}</span>` : '';
-    return `<div class="lb-row" onclick="selectBot('${r.id}');goView('dashboard')" style="cursor:pointer">
-      <div class="lb-rank">${i + 1}</div>
-      <div>
-        <div class="lb-name"><span class="sw" style="background:${BOT_COLORS[r.id]}"></span>${esc(r.name)} ${tags} ${small}</div>
-        <div class="lb-meta">
-          <span>تراجع ${num(fmt(r.maxDrawdown) + '%')}</span>
-          <span>عائد/تراجع ${r.returnToDrawdown == null ? '—' : num(fmt(r.returnToDrawdown))}</span>
-          ${r.id === 'hodl' ? '' : `<span>${num(r.trades)} صفقة مسكّرة</span>`}
-          <span>رسوم ${num('$' + fmt(r.feesPaid))}</span>
-          ${(b.def.kind === 'ai' || b.def.kind === 'meeting' || b.def.kind === 'always') ? `<span>ذكاء اصطناعي ${num('$' + fmt(r.aiCostUSD, 2))}</span>` : ''}
-          ${blocked}
-        </div>
-      </div>
-      <div class="lb-wl" style="color:var(--accent)">${r.wins}</div>
-      <div class="lb-wl" style="color:var(--danger)">${r.losses}</div>
-      <div class="lb-wl">${r.winRatePct == null ? '—' : r.winRatePct + '%'}</div>
-      <div><div class="lb-ret" style="color:${col}">${sign(r.returnPct)}%</div><div class="lb-eq">$${fmt(r.equity)}</div></div>
-    </div>`;
-  }).join('');
+  renderLeaderboard();
 
   const n = G.news;
   const noKey = !(G.keys.xai || G.keys.openrouter || G.mode === 'demo');
