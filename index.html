@@ -506,6 +506,10 @@ table.mt td { padding: 6px; border-bottom: 1px solid var(--bd); white-space: now
 .stat-val, .lb-ret, .lb-eq, .trade-pnl, .analytic-val, .header-balance .val { direction: ltr; unicode-bidi: isolate; }
 .header-balance .val { text-align: left; }
 bdi.n { direction: ltr; unicode-bidi: isolate; font-family: var(--mono); }
+/* «وضع المشاهدة» (/view): قراءة بس — ما فيه أي زر يغيّر شي، ولا صفحة الإعدادات */
+body.view-mode .nav-btn[data-view="settings"], body.view-mode #view-settings,
+body.view-mode .btn-close-trade, body.view-mode .btn-primary, body.view-mode .btn-danger, body.view-mode .btn-info,
+body.view-mode [data-owner] { display: none !important; }
 </style>
 </head>
 <body>
@@ -521,6 +525,7 @@ bdi.n { direction: ltr; unicode-bidi: isolate; font-family: var(--mono); }
     <div class="val" id="hdr-balance">—</div>
   </div>
   <div class="header-badges">
+    <span id="view-badge" class="badge badge-warn" style="display:none">👁 وضع المشاهدة</span>
     <span id="mode-badge" class="badge badge-warn" style="display:none">تجربة</span>
     <span id="ws-badge" class="badge badge-off">غير متصل</span>
     <span id="cb-badge" class="badge badge-warn" style="display:none">⏸ موقوف</span>
@@ -838,6 +843,7 @@ const voteChips = votes => votes ? Object.entries(votes).map(([k, v]) =>
   `<span class="tag ${v.vote === 'ENTER' ? 'ok' : 'no'}" title="${esc(v.reason || '')}">${v.vote === 'ENTER' ? '✓' : '✗'} ${ROLE_AR[k] || k} ${num(v.confidence)}</span>`).join(' ') : '';
 
 // ── STATE ────────────────────────────────────────────────────────────────
+const VIEW = /^\/view\/?$/.test(location.pathname);   // «وضع المشاهدة»: قراءة بس
 let G = null;          // full competition state from server
 let S = null;          // view of the selected contestant (shape the old screens expect)
 let currentBot = (() => { try { return localStorage.getItem('gt-bot') || 'now-qwen'; } catch { return 'now-qwen'; } })();
@@ -1074,7 +1080,7 @@ function renderCompetition() {
   renderLeaderboard();
 
   const n = G.news;
-  const noKey = !(G.keys.xai || G.keys.openrouter || G.mode === 'demo');
+  const noKey = !VIEW && !(G.keys.xai || G.keys.openrouter || G.mode === 'demo');   // وضع المشاهدة ما يعرف المفاتيح
   const part = (p, boxId, ageId) => {
     $(boxId).textContent = p?.text || (noKey ? 'ما فيه مفتاح OpenRouter.' : 'ما وصل شي للحين.');
     $(ageId).textContent = p?.at ? `· ${timeAgo(p.at)}${p.costUSD != null ? ' · $' + fmt(p.costUSD, 3) : ''}${p.error ? ' · آخر محاولة فشلت' : ''}` : (p?.error ? '· فشلت' : '');
@@ -1108,7 +1114,7 @@ function renderMeetings() {
     const chairRow = (label, x) => `<tr><td>${label}</td><td>${num(x.approved)} / ${num(x.rejected)}</td><td>${usd(x.approvedAvgPnl)}</td><td>${usd(x.rejectedAvgPnl)}</td><td>${num(x.rejectedThatLost)}</td><td>${pct(x.accuracy)}</td></tr>`;
     return `<div style="margin-bottom:16px">
       <div style="font-weight:700;margin-bottom:6px"><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${BOT_COLORS[src]}"></span> ${esc(name)}
-        <span class="fam-meta">${num(m.opportunities)} فرصة (منها ${num(m.shadowCount || 0)} انتظار) · ${num(m.closed)} انتهت · لما دخل: فوز ${pct(m.scoutWinRate)}، متوسط ${usd(m.scoutAvgPnl)} · لما انتظر: صدق ${num((m.waitedRight || 0) + '/' + (m.waited || 0))}، متوسط الفرصة ${usd(m.waitedAvgPnl)} · تكلفة ${num('$' + fmt(m.costUSD, 3))}</span></div>
+        <span class="fam-meta">${num(m.opportunities)} فرصة (منها ${num(m.shadowCount || 0)} انتظار) · ${num(m.closed)} انتهت · لما دخل: فوز ${pct(m.scoutWinRate)}، متوسط ${usd(m.scoutAvgPnl)} · لما انتظر: صدق ${num((m.waitedRight || 0) + '/' + (m.waited || 0))}، متوسط الفرصة ${usd(m.waitedAvgPnl)}${m.costUSD != null ? ` · تكلفة ${num('$' + fmt(m.costUSD, 3))}` : ''}</span></div>
       <div style="overflow-x:auto"><table class="mt">
         <tr><th>الخبير</th><th>قيّم</th><th>صدق</th><th>يوافق</th></tr>
         ${Object.entries(m.members).map(([k, x]) => `<tr><td>${ROLE_AR[k]}</td><td>${num(x.rated)}</td><td>${pct(x.accuracy)}</td><td>${pct(x.enterRate)}</td></tr>`).join('')}
@@ -1274,7 +1280,7 @@ function renderActive() {
       </div>
       ${bar}
       <div class="sparkline-wrap"><canvas id="sp-${t.id}"></canvas></div>
-      ${S.id === 'hodl' ? '' : `<button class="btn-close-trade" onclick="closeTrade('${t.id}')">إغلاق يدوي (يُسجّل كتدخل)</button>`}
+      ${S.id === 'hodl' || VIEW ? '' : `<button class="btn-close-trade" onclick="closeTrade('${t.id}')">إغلاق يدوي (يُسجّل كتدخل)</button>`}
     </div>`;
   }).join('');
 
@@ -1662,6 +1668,7 @@ function timeUntil(ts) {
 }
 
 async function api(method, url, body) {
+  if (VIEW) return { ok: false, status: 403, data: { error: 'وضع المشاهدة: قراءة بس' } };
   try {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body) opts.body = JSON.stringify(body);
@@ -1679,8 +1686,25 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(() => { if (G) renderAll(); }, 150);
 });
 
+// ── «وضع المشاهدة» (/view): قراءة بس من /api/public/overview كل 10 ثواني، بدون WebSocket ولا كلمة سر ──
+async function startPublicView() {
+  document.body.classList.add('view-mode');
+  $('view-badge').style.display = '';
+  document.title = 'المِحَك · وضع المشاهدة';
+  const pull = async () => {
+    try {
+      const r = await fetch('/api/public/overview', { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      G = await r.json(); S = botView(); renderAll();
+      setBadge('ws-badge', 'متصل', 'ok');
+    } catch { setBadge('ws-badge', 'غير متصل', 'off'); }
+  };
+  await pull();
+  setInterval(pull, 10_000);
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────
-connectWS();
+if (VIEW) startPublicView(); else connectWS();
 setInterval(() => {
   if (!S) return;
   const view = currentView();

@@ -22,6 +22,7 @@ const { buildMaestro, MAESTRO_MAPPING } = require('./lib/maestro');
 const trendvol = require('./lib/trendvol');
 const { createFunding, fundingAllows, THRESHOLD_8H } = require('./lib/funding');
 const { createTelegram } = require('./lib/telegram');
+const { publicSnapshot, rateLimiter } = require('./lib/public-view');
 strategies.byId['fable-discovery'] = require('./lib/fable-discovery');   // اكتشاف Fable: من بحثه على 2021–2024، مجمّد
 
 // ── استراتيجيات كتبتها النماذج: strategies/<id>.json (مجمّدة، ما تتعدل) ──────
@@ -1586,6 +1587,18 @@ app.post('/api/fable/decision', (req, res) => {
 
 // claude.ai يدوّر OAuth هني أول؛ نقول له ما فيه عشان يكمل بدونه
 app.all('/.well-known/*', (_req, res) => res.status(404).end());
+
+// «وضع المشاهدة»: صفحة عامة للقراءة بس، بدون كلمة سر. GET بس، وبياناتها من قائمة حقول مسموحة (lib/public-view.js).
+// كل الأفعال (POST) و /api/state و /api/export والـ WebSocket تبقى ورا كلمة سر المالك تحت.
+const publicLimit = rateLimiter({ limit: 60, windowMs: 60_000 });
+let publicCache = null;
+app.get('/view', publicLimit, (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/api/public/overview', publicLimit, (_req, res) => {
+  if (!publicCache || Date.now() - publicCache.at > 5_000)
+    publicCache = { at: Date.now(), body: publicSnapshot(clientSnapshot(), Object.keys(RULE_LIMITS)) };
+  res.setHeader('Cache-Control', 'no-store');
+  res.json(publicCache.body);
+});
 
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/webhook/') || req.path === '/api/health') return next();
